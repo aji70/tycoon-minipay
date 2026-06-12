@@ -1216,7 +1216,7 @@ export function TournamentDetailPage({
                                   </ol>
                                   {isAutonomousAgentMatch ? (
                                     <Link
-                                      href={`/board-3d-multi?gameCode=${encodeURIComponent(gameCodeForMatch)}&spectate=1`}
+                                      href={`/board-3d-multi-mobile?gameCode=${encodeURIComponent(gameCodeForMatch)}&spectate=1`}
                                       className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-cyan-300/90 transition-colors"
                                     >
                                       <Eye className="w-3.5 h-3.5" />
@@ -1230,7 +1230,7 @@ export function TournamentDetailPage({
                                   {matchLive ? (
                                     <>
                                       <Link
-                                        href={`/board-3d-multi?gameCode=${encodeURIComponent(gameCodeForMatch)}${isAutonomousAgentMatch ? "&spectate=1" : ""}`}
+                                        href={`/board-3d-multi-mobile?gameCode=${encodeURIComponent(gameCodeForMatch)}${isAutonomousAgentMatch ? "&spectate=1" : ""}`}
                                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/45 text-cyan-100 font-semibold text-sm hover:bg-cyan-500/30 transition-colors"
                                       >
                                         {isAutonomousAgentMatch ? <Eye className="w-4 h-4" /> : <Play className="w-4 h-4" />}

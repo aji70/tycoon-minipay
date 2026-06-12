@@ -8,7 +8,6 @@ import { getContractErrorMessage } from "@/lib/utils/contractErrors";
 import { resolveChainForBackend } from "@/lib/utils/chain";
 import { generateGameCode } from "@/lib/utils/games";
 import { apiClient } from "@/lib/api";
-import { useMediaQuery } from "@/components/useMediaQuery";
 import {
   useIsRegistered,
   useGetUsername,
@@ -84,7 +83,6 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
   const router = useRouter();
   const { address } = useAccount();
   const wagmiChainId = useChainId();
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const redirectTo3D = options?.redirectTo3D ?? false;
   const board3DUrl = redirectTo3D ? `/board-3d-mobile?gameCode=` : null;
   const guestAuth = useGuestAuthOptional();

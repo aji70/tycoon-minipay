@@ -1,5 +1,4 @@
 import { dmSans, kronaOne, orbitron } from "@/components/shared/fonts";
-import NavBar from "@/components/shared/navbar"; // Remove if not used elsewhere
 import ScrollToTopBtn from "@/components/shared/scroll-to-top-btn";
 import "@/styles/globals.css";
 import { headers } from "next/headers";
@@ -11,7 +10,7 @@ import { GuestAuthProvider } from "@/context/GuestAuthContext";
 import { Toaster } from "react-hot-toast";
 import FarcasterReady from "@/components/FarcasterReady";
 import { minikitConfig } from "../minikit.config";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import ClientLayout from "../clients/ClientLayout";
 import QueryProvider from "./QueryProvider";
@@ -52,6 +51,12 @@ function resolveMetadataBase(): URL {
     return new URL(fallback);
   }
 }
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useMediaQuery } from "@/components/useMediaQuery";
 import GameSettingsMobile from "@/components/settings/game-settings-mobile";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
@@ -11,7 +10,6 @@ import { Loader2, AlertCircle } from "lucide-react";
  * Multiplayer 3D game settings. Create a game → redirects to 3D waiting room (game-waiting-3d).
  */
 export default function GameSettings3DPage() {
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const router = useRouter();
   const { address } = useAccount();
 

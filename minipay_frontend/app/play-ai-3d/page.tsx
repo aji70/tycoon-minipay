@@ -1,16 +1,13 @@
 "use client";
 
-import { useMediaQuery } from "@/components/useMediaQuery";
-import PlayWithAI3D from "@/components/settings/game-ai-3d";
 import PlayWithAI3DMobile from "@/components/settings/game-ai-3d-mobile";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useIsRegistered } from "@/context/ContractProvider";
 import { Loader2, AlertCircle } from "lucide-react";
 
-/** New page: AI game settings that redirect to 3D board. Does not edit production play-ai or rewards. */
+/** AI game settings for MiniPay mobile — redirects to /board-3d-mobile after create. */
 export default function PlayAI3DPage() {
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const router = useRouter();
   const { address } = useAccount();
 
@@ -52,7 +49,7 @@ export default function PlayAI3DPage() {
 
   return (
     <main className="w-full overflow-x-hidden min-h-screen bg-gradient-to-br from-[#0E282A] via-slate-900 to-slate-950">
-      {isMobile ? <PlayWithAI3DMobile /> : <PlayWithAI3D />}
+      <PlayWithAI3DMobile />
     </main>
   );
 }
