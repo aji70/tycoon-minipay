@@ -17,6 +17,7 @@ import QueryProvider from "./QueryProvider";
 import BfcacheReloadGuard from "@/components/BfcacheReloadGuard";
 import MinipaySiteRedirect from "@/components/MinipaySiteRedirect";
 import MinipayAutoConnect from "@/components/MinipayAutoConnect";
+import DeferredToasts from "@/components/DeferredToasts";
 import { buildMinipaySiteRedirectScript } from "@/lib/minipaySiteRedirect";
 
 // Run before React: (1) Reload board when restored from bfcache so WebGL is fresh. (2) Disable bfcache on board so back button does full load instead of restore (avoids Context Lost + .style crash).
@@ -136,6 +137,7 @@ export default async function RootLayout({
                 </ClientLayout>
 
                 <ScrollToTopBtn />
+                <DeferredToasts />
                 <Toaster position="top-center" />
                 </QueryProvider>
               </AppKitProviderWrapper>
