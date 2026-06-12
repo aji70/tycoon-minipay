@@ -512,7 +512,7 @@ const HeroSection: React.FC = () => {
             <motion.p
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.3 }}
               className="font-orbitron text-[18px] font-[700] text-[#00F0FF] text-center drop-shadow-lg"
               style={{
                 textShadow: "0 0 10px rgba(0, 240, 255, 0.8), 0 0 20px rgba(0, 240, 255, 0.4)",
@@ -526,7 +526,7 @@ const HeroSection: React.FC = () => {
               className="flex gap-2 border border-cyan-500/40 rounded p-2 text-[12px] font-orbitron"
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              transition={{ duration: 0.2, delay: 0 }}
             >
               <div className="text-[#00F0FF]">LEVEL <span className="text-white font-bold">26</span></div>
               <div className="text-[#00F0FF]">STATUS <span className="text-cyan-400 font-bold">Elite</span></div>
@@ -537,7 +537,7 @@ const HeroSection: React.FC = () => {
               className="flex flex-col items-center gap-1 text-[11px]"
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              transition={{ duration: 0.2, delay: 0 }}
             >
               <div className="text-[#00F0FF]/70 font-orbitron">XP PROGRESS 60/70</div>
               <div className="h-1 bg-cyan-500 w-32 rounded"/>
@@ -549,7 +549,7 @@ const HeroSection: React.FC = () => {
                 className="flex flex-col items-center gap-3 bg-gradient-to-b from-[#0E282A]/80 to-[#0A1719]/80 rounded-lg p-4 border border-[#00F0FF]/40 backdrop-blur-sm"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+                transition={{ duration: 0.3, delay: 0 }}
               >
                 <div className="flex items-center gap-3 flex-wrap justify-center">
                   <motion.span
@@ -609,7 +609,7 @@ const HeroSection: React.FC = () => {
           style={{ overflow: "visible", whiteSpace: "nowrap" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
+          transition={{ delay: 0, duration: 0.3 }}
         >
           <TypeAnimation
             sequence={[
@@ -641,7 +641,7 @@ const HeroSection: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
+          transition={{ delay: 0, duration: 0.3 }}
         >
           <NeonTitle text="TYCOON" size="lg" />
         </motion.div>
@@ -651,7 +651,7 @@ const HeroSection: React.FC = () => {
           style={{ overflow: "visible", whiteSpace: "nowrap" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
+          transition={{ delay: 0, duration: 0.3 }}
         >
           <TypeAnimation
             sequence={[
@@ -854,7 +854,7 @@ const HeroSection: React.FC = () => {
               className="flex flex-wrap justify-center items-center gap-2 mb-20"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              transition={{ duration: 0.3, delay: 0 }}
             >
               {/* Continue Previous Game - Highlighted (wallet: from contract; guest: from my-games) */}
               {((address && gameCode && (contractGame?.status == 1) && (!backendGame || (backendGame.status !== "FINISHED" && backendGame.status !== "COMPLETED" && backendGame.status !== "CANCELLED"))) ||
