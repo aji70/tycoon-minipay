@@ -15,8 +15,9 @@ const HOW_IT_WORKS_BACKGROUNDS = [
 
 const SLIDE_COUNT = HOW_IT_WORKS_BACKGROUNDS.length;
 
-/** Mobile-only — no desktop breakpoints needed. */
-const HOW_IT_WORKS_IMAGE_SIZES = '100vw';
+/** Responsive srcset — avoids shipping 900px+ backgrounds to narrow viewports. */
+const HOW_IT_WORKS_IMAGE_SIZES =
+  '(max-width: 640px) 480px, (max-width: 1024px) 768px, 100vw';
 
 let swiperStylesLoaded = false;
 
@@ -65,8 +66,8 @@ const HowItWorks = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-[#010F1000] via-[#010F10] z-[1] w-full px-4 flex flex-col items-center justify-center">
         <div className="w-full flex flex-col justify-center items-center gap-2 mb-6">
           <span className="game-badge mb-2">TUTORIAL</span>
-          <h1 className="game-section-title text-center text-[32px] leading-normal">How it works</h1>
-          <p className="w-full text-center text-[18px] font-[400] font-dmSans leading-[30px] text-[#E0F7F8]">
+          <h1 className="game-section-title text-center md:text-[48px] text-[32px] leading-normal">How it works</h1>
+          <p className="md:max-w-[60%] w-full text-center text-[18px] md:text-[20px] font-[400] font-dmSans leading-[30px] text-[#E0F7F8]">
             Complete each step to master Tycoon. Simple flow, zero stress.
           </p>
         </div>
@@ -85,25 +86,25 @@ const HowItWorks = () => {
           {slidesData.map((item, index) => (
             <SwiperSlide
               key={index}
-              className={`keen-slider__slide w-[90%] h-[350px] relative p-3 rounded-[12px] overflow-hidden flex items-center justify-center transition-[opacity,filter,transform] duration-500 will-change-transform ${
+              className={`keen-slider__slide w-[90%] sm:w-full h-[350px] relative md:p-6 p-3 rounded-[12px] overflow-hidden flex items-center justify-center transition-[opacity,filter,transform] duration-500 will-change-transform ${
                 currentSlide !== index ? 'blur-[1.5px] opacity-40 scale-[0.95]' : 'opacity-100 blur-0 scale-100'
               }`}
             >
-              <div className="w-full h-full bg-[#091F201F] border-[1px] border-[#003B3E] rounded-[12px] custom-glow-blur p-6 flex flex-col justify-between items-center game-panel">
+              <div className="w-full h-full bg-[#091F201F] border-[1px] border-[#003B3E] rounded-[12px] custom-glow-blur p-6 md:p-10 flex flex-col justify-between items-center game-panel">
                 <div className="w-full flex items-center justify-between">
                   {item.icon}
                   <span className="game-level-label">LEVEL {index + 1}</span>
                 </div>
                 <div className="flex flex-col">
-                  <h2 className="text-[20px] text-[#FFFFFF] font-[800] font-orbitron uppercase">{item.title}</h2>
-                  <p className="text-[17px] leading-[28px] text-[#BDBDBD] font-[400] font-dmSans mt-2">{item.description}</p>
+                  <h2 className="md:text-[25px] text-[20px] text-[#FFFFFF] font-[800] font-orbitron uppercase">{item.title}</h2>
+                  <p className="md:text-[18px] text-[17px] leading-[28px] text-[#BDBDBD] font-[400] font-dmSans mt-2">{item.description}</p>
                 </div>
               </div>
             </SwiperSlide>
           ))}
         </Swiper>
 
-        <div className="w-full max-w-[620px] flex justify-between items-center gap-6 mt-6">
+        <div className="w-full max-w-[620px] flex justify-between items-center gap-6 mt-6 md:px-6">
           <div className="swiper-pagination hidden" />
           <div className="flex gap-2">
             {[0, 1, 2, 3].map((i) => (
