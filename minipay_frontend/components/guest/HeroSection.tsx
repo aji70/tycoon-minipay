@@ -499,39 +499,40 @@ const HeroSection: React.FC<HeroSectionProps> = ({ overlayMode = false }) => {
           : "z-0 w-full h-screen relative overflow-hidden bg-[#010F10]"
       }
     >
-      {/* Background — hidden on mobile overlay so board art does not peek at edges */}
-      {!(overlayMode && isMobileViewport) && (
-        <motion.div
-          className="w-full h-full overflow-hidden absolute inset-0"
-          animate={{
-            x: isMobileViewport ? 0 : mousePosition.x * 10,
-            y: isMobileViewport ? 0 : mousePosition.y * 10,
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <Image
-            src={herobg}
-            alt=""
-            aria-hidden
-            className="w-full h-full object-cover"
-            width={1440}
-            height={1024}
-            priority={!overlayMode}
-            fetchPriority={overlayMode ? "low" : "high"}
-            sizes="(max-width: 768px) 100vw, 1440px"
-            quality={overlayMode ? 60 : 75}
-          />
-        </motion.div>
-      )}
+      <motion.div
+        className="w-full h-full overflow-hidden absolute inset-0"
+        animate={{
+          x: isMobileViewport ? 0 : mousePosition.x * 10,
+          y: isMobileViewport ? 0 : mousePosition.y * 10,
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <Image
+          src={herobg}
+          alt=""
+          aria-hidden
+          className={
+            overlayMode && isMobileViewport
+              ? "h-full w-full object-cover object-center scale-110"
+              : "h-full w-full object-cover"
+          }
+          width={1440}
+          height={1024}
+          priority={!overlayMode}
+          fetchPriority={overlayMode ? "low" : "high"}
+          sizes="(max-width: 768px) 100vw, 1440px"
+          quality={overlayMode ? 65 : 75}
+        />
+      </motion.div>
 
       {!overlayMode && <ParticleBackground />}
       {!overlayMode && <ScanlineOverlay />}
 
-      {/* Gradient overlay */}
+      {/* Gradient overlay — vignette on mobile keeps board art centered, edges subdued */}
       <div
         className={
           overlayMode
-            ? "absolute inset-0 z-[5] bg-[#010F10]/40 pointer-events-none"
+            ? "absolute inset-0 z-[5] pointer-events-none bg-gradient-to-b from-[#010F10]/75 via-[#010F10]/35 to-[#010F10]/85"
             : "absolute inset-0 bg-gradient-to-b from-transparent via-[#010F10]/20 to-[#010F10]/60 z-5"
         }
       />

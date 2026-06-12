@@ -6,7 +6,7 @@ import { NeonTitle } from "@/components/hero/NeonTitle";
  */
 export default function HeroLcpShell() {
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col bg-[#010F10] px-4">
+    <div className="flex min-h-[100dvh] w-full flex-col bg-[#010F10]/95 px-4">
       {/* Top band: reserved for welcome / level (overlay) */}
       <div className="h-[calc(var(--mobile-nav-offset)+4.5rem)] shrink-0" aria-hidden />
       {/* Middle band: LCP title */}
