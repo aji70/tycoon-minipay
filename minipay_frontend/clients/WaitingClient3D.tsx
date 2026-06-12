@@ -59,7 +59,7 @@ function NotRegisteredScreen() {
 }
 
 /**
- * Waiting room client for multiplayer 3D. Uses the minimal 3D lobby; when game starts, redirects to board-3d-multi.
+ * Waiting room client for multiplayer 3D. Redirects to /board-3d-multi-mobile when the game starts.
  */
 export default function GameWaitingClient3D() {
   const { address } = useAccount();

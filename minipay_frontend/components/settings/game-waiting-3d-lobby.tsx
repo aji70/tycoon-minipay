@@ -11,7 +11,6 @@ import { ParticleBackground } from "@/components/hero/ParticleBackground";
 import { WARoomLaunchButton } from "@/components/game-setup/WARoomLaunchButton";
 
 const REDIRECT_TO_BOARD = "/board-3d-multi-mobile";
-const REDIRECT_TO_BOARD_MOBILE = "/board-3d-multi-mobile";
 const COPY_FEEDBACK_MS = 2000;
 
 function ReticleCorners() {
@@ -52,9 +51,7 @@ function SectionLabel({ children, icon }: { children: React.ReactNode; icon?: Re
   );
 }
 
-/**
- * 3D game waiting room. Uses same useWaitingRoom logic; redirects to board-3d-multi when game starts.
- */
+/** 3D game waiting room. Redirects to /board-3d-multi-mobile when the game starts. */
 export default function GameWaiting3DLobby(): React.ReactElement {
   const {
     router,
@@ -81,7 +78,7 @@ export default function GameWaiting3DLobby(): React.ReactElement {
     isJoining,
     joinError,
     contractGameError,
-  } = useWaitingRoom({ redirectToBoard: REDIRECT_TO_BOARD, redirectToBoardMobile: REDIRECT_TO_BOARD_MOBILE });
+  } = useWaitingRoom({ redirectToBoard: REDIRECT_TO_BOARD });
 
   const gameUrl3d = useMemo(() => {
     if (!gameCode) return "";

@@ -270,7 +270,7 @@ export function LeaderboardView({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,#10343b_0%,#061416_45%,transparent_70%)]" />
 
       <header className="relative z-20 border-b border-cyan-400/15 bg-[#031012]/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-4xl items-center px-4 py-4 md:px-8">
+        <div className="mx-auto flex max-w-md items-center px-4 py-4">
           <Link href="/" className="flex items-center gap-2 text-cyan-300 hover:text-cyan-200 text-sm font-semibold font-orbitron">
             <ChevronLeft className="h-5 w-5" />
             Back
@@ -278,9 +278,9 @@ export function LeaderboardView({
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-3xl lg:max-w-4xl px-4 py-8 md:px-8 md:py-10">
+      <main className="relative z-10 mx-auto max-w-md px-4 py-8">
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-orbitron uppercase tracking-wider mb-2" style={{ textShadow: '0 0 24px rgba(0, 240, 255, 0.55), 0 0 48px rgba(0, 240, 255, 0.25)' }}>
+          <h1 className="text-3xl font-black font-orbitron uppercase tracking-wider mb-2" style={{ textShadow: '0 0 24px rgba(0, 240, 255, 0.55), 0 0 48px rgba(0, 240, 255, 0.25)' }}>
             <span className="bg-gradient-to-r from-cyan-300 via-cyan-200 to-cyan-400 bg-clip-text text-transparent">🏆 HALL OF DOMINANCE</span>
           </h1>
           <p className="text-cyan-300/65 font-dmSans text-xs sm:text-sm tracking-widest uppercase">Ranked by games played · {chainParam} Chain</p>

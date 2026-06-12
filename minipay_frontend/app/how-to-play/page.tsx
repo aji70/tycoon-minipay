@@ -46,7 +46,7 @@ export default function HowToPlayPage() {
     <div className="min-h-screen bg-[#010F10] text-[#F0F7F7]">
       {/* Top bar */}
       <div className="sticky top-0 z-20 border-b border-[#003B3E]/60 bg-[#010F10]/95 backdrop-blur-md">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
           <button
             type="button"
             onClick={handleBack}
@@ -59,14 +59,14 @@ export default function HowToPlayPage() {
         </div>
       </div>
 
-      <article className="max-w-4xl mx-auto px-4 py-8 pb-16">
+      <article className="max-w-md mx-auto px-4 py-8 pb-16">
         {/* Hero */}
         <header className="mb-12">
           <div className="flex items-center gap-3 mb-4">
             <div className="rounded-xl bg-[#00F0FF]/10 border border-[#00F0FF]/30 p-3">
               <BookOpen className="w-8 h-8 text-[#00F0FF]" />
             </div>
-            <h1 className="font-orbitron text-3xl md:text-4xl font-bold text-white">
+            <h1 className="font-orbitron text-3xl font-bold text-white">
               How to Play Tycoon
             </h1>
           </div>

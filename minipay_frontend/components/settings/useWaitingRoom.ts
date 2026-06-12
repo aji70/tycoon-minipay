@@ -41,25 +41,15 @@ function isTournamentMatchCode(code: string): boolean {
   return /^T\d+-R\d+-M\d+$/i.test(code);
 }
 
-const MOBILE_BREAKPOINT_PX = 768;
-
 export interface UseWaitingRoomOptions {
   /** When game is RUNNING, redirect here (default: /board-3d-multi-mobile). */
   redirectToBoard?: string;
-  /** On viewports <= 768px, redirect here instead of redirectToBoard (e.g. /board-3d-multi-mobile). */
-  redirectToBoardMobile?: string;
 }
 
 export function useWaitingRoom(options: UseWaitingRoomOptions = {}) {
-  const { redirectToBoard = "/board-3d-multi-mobile", redirectToBoardMobile } = options;
+  const { redirectToBoard = "/board-3d-multi-mobile" } = options;
 
-  const getRedirectBoardUrl = useCallback(() => {
-    const base = redirectToBoard;
-    if (redirectToBoardMobile && typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT_PX) {
-      return redirectToBoardMobile;
-    }
-    return base;
-  }, [redirectToBoard, redirectToBoardMobile]);
+  const getRedirectBoardUrl = useCallback(() => redirectToBoard, [redirectToBoard]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawGameCode = searchParams.get("gameCode") ?? "";

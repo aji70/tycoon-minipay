@@ -1,5 +1,5 @@
 /**
- * Shared game/board constants used by ai-board (desktop + mobile) and board-mobile.
+ * Shared game/board constants used by 3D mobile boards.
  */
 
 export const BOARD_SQUARES = 40;

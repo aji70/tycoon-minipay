@@ -15,9 +15,15 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();
-  const isBoard3DMobile = pathname === "/board-3d-mobile" || pathname === "/board-3d-multi-mobile";
+  const isBoard3D = pathname === "/board-3d-mobile" || pathname === "/board-3d-multi-mobile";
   const isHome = pathname === "/";
-  const needsMobileNavPadding = !isBoard3DMobile && !isHome;
+  const needsMobileNavPadding = !isBoard3D && !isHome;
+  const contentClassName = [
+    needsMobileNavPadding ? "pt-below-mobile-nav" : "",
+    !isBoard3D ? "max-w-md mx-auto w-full" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   useEffect(() => {
     setIsClient(true);
@@ -34,11 +40,15 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <ProfileProvider>
       <div suppressHydrationWarning className={`${orbitron.variable} ${dmSans.variable} ${kronaOne.variable}`}>
-        <NavBarMobile minimal={isBoard3DMobile} />
-        <AuthGuard>
-          <div className={needsMobileNavPadding ? "pt-below-mobile-nav" : undefined}>
-            {children}
+        {isBoard3D ? (
+          <NavBarMobile minimal />
+        ) : (
+          <div className="max-w-md mx-auto w-full">
+            <NavBarMobile />
           </div>
+        )}
+        <AuthGuard>
+          <div className={contentClassName || undefined}>{children}</div>
         </AuthGuard>
       </div>
     </ProfileProvider>
