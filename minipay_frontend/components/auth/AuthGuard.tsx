@@ -5,25 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useGuestAuthOptional } from "@/context/GuestAuthContext";
 import { Wallet, User } from "lucide-react";
-
-/** Paths that do not require wallet or guest sign-in (user can access anonymously). */
-const PUBLIC_PATHS = [
-  "/",
-  "/join-room-3d",
-  "/leaderboard",
-  "/terms",
-  "/privacy",
-  "/cookies",
-  "/how-to-play",
-];
-
-function isPublicPath(pathname: string): boolean {
-  const path = pathname?.split("?")[0] ?? "";
-  if (path.startsWith("/u/")) {
-    return true;
-  }
-  return PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));
-}
+import { isPublicPath } from "@/lib/publicPaths";
 
 interface AuthGuardProps {
   children: ReactNode;
