@@ -105,34 +105,6 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.reown.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://pulse.walletconnect.org" />
 
-        {/* Inline critical CSS for above-fold (LCP optimization) */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          :root {
-            --mobile-nav-height: 82px;
-            --mobile-nav-offset: calc(var(--mobile-nav-height) + env(safe-area-inset-top, 0px));
-            --radius: 0.625rem;
-            --background: oklch(0.145 0 0);
-            --foreground: oklch(0.985 0 0);
-            --card: oklch(0.205 0 0);
-            --card-foreground: oklch(0.985 0 0);
-            --primary: oklch(0.922 0 0);
-            --primary-foreground: oklch(0.205 0 0);
-            --accent: oklch(0.269 0 0);
-            --accent-foreground: oklch(0.985 0 0);
-            --border: oklch(1 0 0 / 10%);
-            --input: oklch(1 0 0 / 15%);
-          }
-          * { border-color: var(--border); outline-color: var(--accent) / 0.5; }
-          body { background-color: #010F10; color: var(--foreground); font-family: var(--font-dm-sans), system-ui, sans-serif; }
-          .neon-title-hero { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision; }
-          .neon-title-text { position: relative; z-index: 1; display: block; text-shadow: 0 0 8px rgba(0, 240, 255, 0.8), 0 0 16px rgba(0, 240, 255, 0.6); }
-          .neon-title-glow-pulse { position: absolute; inset: 0; display: block; color: inherit; pointer-events: none; user-select: none; text-shadow: 0 0 10px rgba(0, 240, 255, 0.9), 0 0 20px rgba(15, 240, 252, 0.75); opacity: 0.55; will-change: opacity; animation: neon-title-glow-opacity 3s ease-in-out infinite; }
-          @keyframes neon-title-glow-opacity { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
-          @media (prefers-reduced-motion: reduce) { .neon-title-glow-pulse { animation: none; opacity: 0.55; } }
-          .game-badge { font-weight: 700; font-size: 0.65rem; letter-spacing: 0.2em; color: #00F0FF; text-shadow: 0 0 8px rgba(0, 240, 255, 0.5); border: 1px solid rgba(0, 240, 255, 0.4); background: rgba(1, 15, 16, 0.85); padding: 6px 12px; border-radius: 4px; }
-          .game-section-title { font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #F0F7F7; text-shadow: 0 0 20px rgba(0, 240, 255, 0.15); }
-        ` }} />
-
       </head>
 
       <body
