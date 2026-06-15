@@ -38,6 +38,7 @@ import { MIN_FLUTTERWAVE_CHECKOUT_NGN } from '@/lib/constants/ngnPayments';
 import { shopPerkRow } from '@/lib/shopPerkRow';
 import { isShopPerkHidden } from '@/lib/perkShopAssets';
 import { pickMinipayPreferredStable, type MinipayStableOption } from '@/lib/shop/preferredStable';
+import { ensureErc20Allowance, waitForTxConfirmed } from '@/lib/ensureErc20Allowance';
 
 import {
   useRewardBuyCollectible,
@@ -352,7 +353,7 @@ export default function GameShopMobile() {
   const activeStableBalance = Number.isFinite(preferredStable.balance) ? preferredStable.balance : 0;
   const stableLoading = usdcLoading || cusdcLoading || usdtLoading;
 
-  const { data: stableAllowance } = useReadContract({
+  const { refetch: refetchStableAllowance } = useReadContract({
     address: preferredStable.tokenAddress,
     abi: Erc20Abi,
     functionName: 'allowance',
@@ -366,7 +367,7 @@ export default function GameShopMobile() {
   const { buyBundle, isPending: buyBundlePending, isConfirming: buyBundleConfirming, reset: resetBuyBundle } = useRewardBuyBundle();
   const { buyBundleFrom, isPending: buyBundleFromPending, isConfirming: buyBundleFromConfirming, reset: resetBuyBundleFrom } = useRewardBuyBundleFrom();
   const bundleTxBusy = buyBundlePending || buyBundleConfirming || buyBundleFromPending || buyBundleFromConfirming;
-  const { approve, isPending: approvePending, isSuccess: approveSuccess, error: approveError, reset: resetApprove } = useApprove();
+  const { approve, isPending: approvePending, isConfirming: approveConfirming, error: approveError, reset: resetApprove } = useApprove();
   const {
     approveERC20: smartWalletApprove,
     isPending: smartWalletApprovePending,
@@ -659,6 +660,9 @@ export default function GameShopMobile() {
       return;
     }
     try {
+      if (!publicClient) {
+        throw new Error('Network client not ready. Try again.');
+      }
       if (payWith === 'smart_wallet' && smartWalletAddress) {
         const session = readAppSessionToken();
         if (session && preferredStable.symbol === 'USDT') {
@@ -678,20 +682,34 @@ export default function GameShopMobile() {
           }
           toast.success('Purchase successful!');
         } else {
-          await smartWalletApprove(paymentTokenAddress, contractAddress, price);
-          await buyFrom(smartWalletAddress, item.tokenId, paymentToken);
+          await ensureErc20Allowance({
+            publicClient,
+            token: paymentTokenAddress,
+            owner: smartWalletAddress,
+            spender: contractAddress,
+            requiredAmount: price,
+            approve: smartWalletApprove,
+            unlimited: true,
+          });
+          const buyHash = await buyFrom(smartWalletAddress, item.tokenId, paymentToken);
+          if (buyHash) await waitForTxConfirmed(publicClient, buyHash);
         }
       } else {
-        if (stableAllowance === undefined || stableAllowance === null) {
-          toast.info('Approval required');
-          await approve(paymentTokenAddress, contractAddress, price);
-          toast.success('Approval successful');
-        } else if (typeof stableAllowance === 'bigint' && stableAllowance < price) {
-          toast.info('Increasing approval...');
-          await approve(paymentTokenAddress, contractAddress, price);
-          toast.success('Approval updated');
+        if (!payerAddress) {
+          throw new Error('Wallet not connected');
         }
-        await buy(item.tokenId, paymentToken);
+        await ensureErc20Allowance({
+          publicClient,
+          token: paymentTokenAddress,
+          owner: payerAddress,
+          spender: contractAddress,
+          requiredAmount: price,
+          approve,
+          unlimited: true,
+        });
+        const buyHash = await buy(item.tokenId, paymentToken);
+        if (buyHash) await waitForTxConfirmed(publicClient, buyHash);
+        void refetchStableAllowance();
       }
     } catch (err: unknown) {
       notifyShopTxOutcome(err, 'Purchase failed');
@@ -767,19 +785,18 @@ export default function GameShopMobile() {
 
   const ensureBundleStableAllowance = async (amount: bigint) => {
     const token = preferredStable.tokenAddress;
-    if (!token || !contractAddress || !payerAddress) {
+    if (!token || !contractAddress || !payerAddress || !publicClient) {
       throw new Error(`${activeStableLabel} not supported on this network`);
     }
-    const allowance =
-      stableAllowance === undefined || stableAllowance === null
-        ? undefined
-        : typeof stableAllowance === 'bigint'
-          ? stableAllowance
-          : BigInt(stableAllowance.toString());
-    if (allowance === undefined || allowance < amount) {
-      const approveHash = await approve(token, contractAddress, amount);
-      if (approveHash) await waitForBundleTx(approveHash);
-    }
+    await ensureErc20Allowance({
+      publicClient,
+      token,
+      owner: payerAddress,
+      spender: contractAddress,
+      requiredAmount: amount,
+      approve,
+      unlimited: true,
+    });
   };
 
   const handleBuyBundleWithUsdc = async (bundleName: string) => {
@@ -814,6 +831,9 @@ export default function GameShopMobile() {
     resetBuyBundleFrom();
 
     try {
+      if (!publicClient) {
+        throw new Error('Network client not ready. Try again.');
+      }
       if (payWith === 'smart_wallet') {
         const session = readAppSessionToken();
         if (session) {
@@ -835,8 +855,15 @@ export default function GameShopMobile() {
           refetchUsdt();
           return;
         }
-        const swApproveHash = await smartWalletApprove(preferredStable.tokenAddress!, contractAddress, priceWei);
-        if (swApproveHash) await waitForBundleTx(swApproveHash);
+        await ensureErc20Allowance({
+          publicClient,
+          token: preferredStable.tokenAddress!,
+          owner: smartWalletAddress!,
+          spender: contractAddress,
+          requiredAmount: priceWei,
+          approve: smartWalletApprove,
+          unlimited: true,
+        });
         const fromHash = await buyBundleFrom(smartWalletAddress!, BigInt(bundleEntry.id), true);
         await waitForBundleTx(fromHash);
       } else {
@@ -928,18 +955,20 @@ export default function GameShopMobile() {
       refetchUsdc();
       refetchCusdc();
       refetchUsdt();
+      void refetchStableAllowance();
       resetBuy();
     }
-  }, [buySuccess, refetchUsdc, refetchCusdc, refetchUsdt, resetBuy]);
+  }, [buySuccess, refetchUsdc, refetchCusdc, refetchUsdt, refetchStableAllowance, resetBuy]);
   useEffect(() => {
     if (buyFromSuccess) {
       toast.success('Purchase successful!');
       refetchUsdc();
       refetchCusdc();
       refetchUsdt();
+      void refetchStableAllowance();
       resetBuyFrom();
     }
-  }, [buyFromSuccess, refetchUsdc, refetchCusdc, refetchUsdt, resetBuyFrom]);
+  }, [buyFromSuccess, refetchUsdc, refetchCusdc, refetchUsdt, refetchStableAllowance, resetBuyFrom]);
 
   useEffect(() => {
     if (redeemSuccess) {
@@ -1221,6 +1250,8 @@ export default function GameShopMobile() {
                           item.stock === 0 ||
                           buyingPending ||
                           buyingConfirming ||
+                          approvePending ||
+                          approveConfirming ||
                           buyFromPending ||
                           buyFromConfirming ||
                           smartWalletApprovePending ||
@@ -1233,11 +1264,11 @@ export default function GameShopMobile() {
                             ? 'bg-gradient-to-r from-[#00F0FF]/30 to-[#0DD6E0]/25 text-[#00F0FF] border border-[#00F0FF]/40'
                             : activeStableBalance < Number(preferredStable.symbol === 'CUSDC' ? item.cusdcPrice : preferredStable.symbol === 'USDT' ? item.usdtPrice : item.usdcPrice)
                             ? 'bg-slate-700/80 text-slate-400'
-                            : (buyingPending || buyingConfirming || buyFromPending || buyFromConfirming || smartWalletApprovePending)
+                            : (buyingPending || buyingConfirming || buyFromPending || buyFromConfirming || smartWalletApprovePending || approvePending || approveConfirming)
                             ? 'bg-amber-600/90 text-black'
                             : 'bg-gradient-to-r from-[#00F0FF] to-[#0DD6E0] text-black active:brightness-110'}`}
                       >
-                        {(buyingPending || buyingConfirming || buyFromPending || buyFromConfirming || smartWalletApprovePending) ? (
+                        {(buyingPending || buyingConfirming || buyFromPending || buyFromConfirming || smartWalletApprovePending || approvePending || approveConfirming) ? (
                           <Loader2 className="inline animate-spin mr-2" size={16} />
                         ) : item.stock === 0 ? (
                           'Sold Out'

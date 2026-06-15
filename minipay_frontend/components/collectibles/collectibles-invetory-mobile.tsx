@@ -9,8 +9,10 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useBalance,
+  usePublicClient,
 } from "wagmi";
 import { formatUnits, type Address, type Abi, erc20Abi } from "viem";
+import { ensureErc20Allowance, waitForTxConfirmed } from "@/lib/ensureErc20Allowance";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { getContractErrorMessage } from "@/lib/utils/contractErrors";
@@ -129,6 +131,7 @@ export default function CollectibleInventoryBar({
   const { address: wagmiAddress, isConnected } = useAccount();
   const guestAuth = useGuestAuthOptional();
   const chainId = useChainId();
+  const publicClient = usePublicClient();
   const contractAddress = REWARD_CONTRACT_ADDRESSES[chainId as keyof typeof REWARD_CONTRACT_ADDRESSES] as Address | undefined;
   const usdcToken = USDC_TOKEN_ADDRESS[chainId as keyof typeof USDC_TOKEN_ADDRESS] as Address | undefined;
 
@@ -211,7 +214,6 @@ export default function CollectibleInventoryBar({
     approve,
     isPending: approvePending,
     isConfirming: approveConfirming,
-    isSuccess: approveSuccess,
     reset: resetApprove,
   } = useApprove();
 
@@ -225,15 +227,13 @@ export default function CollectibleInventoryBar({
 
   const { data: usdcBal } = useBalance({ address: payerAddress, token: usdcToken });
 
-  const { data: allowance } = useReadContract({
+  const { refetch: refetchAllowance } = useReadContract({
     address: selectedToken,
     abi: erc20Abi,
     functionName: "allowance",
     args: payerAddress && contractAddress ? [payerAddress, contractAddress] : undefined,
     query: { enabled: !!payerAddress && !!contractAddress && !!selectedToken },
   });
-
-  const currentAllowance = allowance ?? 0;
 
   const { burn: burnCollectible, isPending: isBurning, isSuccess: burnSuccess, reset: resetBurn } = useRewardBurnCollectible();
   const burnConfirmedRef = useRef(false);
@@ -503,6 +503,10 @@ export default function CollectibleInventoryBar({
     }
 
     try {
+      if (!publicClient) {
+        toast.error("Network client not ready. Try again.");
+        return;
+      }
       if (payWith === 'smart_wallet' && smartWalletAddress) {
         // Smart wallet payment
         const session = readAppSessionToken();
@@ -531,28 +535,52 @@ export default function CollectibleInventoryBar({
           toast.success("Purchase successful! 🎉");
           setApprovingId(null);
         } else {
-          // Fallback: direct smartWalletApprove + buyFrom for unregistered smart wallets
-          await smartWalletApprove(usdcToken, contractAddress, price);
           setApprovingId(item.tokenId);
           toast.loading("Approving USDT from smart wallet...", { id: "approve-sw" });
-        }
-      } else {
-        // Connected wallet payment
-        if (currentAllowance < price) {
-          setApprovingId(item.tokenId);
-          toast.loading("Approving USDT...", { id: "approve" });
-          await approve(usdcToken, contractAddress, price);
-        } else {
-          // Approval already sufficient, proceed to buy
+          await ensureErc20Allowance({
+            publicClient,
+            token: usdcToken,
+            owner: smartWalletAddress,
+            spender: contractAddress,
+            requiredAmount: price,
+            approve: smartWalletApprove,
+            unlimited: true,
+          });
+          toast.dismiss("approve-sw");
           setBuyingId(item.tokenId);
           toast.loading("Purchasing...", { id: "buy" });
-          await buy(item.tokenId, 3);
+          const buyHash = await buyFrom(smartWalletAddress, item.tokenId, 3);
+          if (buyHash) await waitForTxConfirmed(publicClient, buyHash);
         }
+      } else {
+        if (!payerAddress) {
+          toast.error("Wallet not connected");
+          return;
+        }
+        setApprovingId(item.tokenId);
+        toast.loading("Checking USDT approval...", { id: "approve" });
+        await ensureErc20Allowance({
+          publicClient,
+          token: usdcToken,
+          owner: payerAddress,
+          spender: contractAddress,
+          requiredAmount: price,
+          approve,
+          unlimited: true,
+        });
+        toast.dismiss("approve");
+        setApprovingId(null);
+        setBuyingId(item.tokenId);
+        toast.loading("Purchasing...", { id: "buy" });
+        const buyHash = await buy(item.tokenId, 3);
+        if (buyHash) await waitForTxConfirmed(publicClient, buyHash);
+        void refetchAllowance();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Transaction failed";
       toast.error(msg);
       setApprovingId(null);
+      setBuyingId(null);
     }
   };
 
@@ -616,41 +644,16 @@ export default function CollectibleInventoryBar({
     }
   };
 
-  // Handle approval success
-  useEffect(() => {
-    if (approveSuccess && approvingId !== null) {
-      toast.dismiss("approve");
-      toast.dismiss("approve-sw");
-      toast.success("Approved! Completing purchase...");
-      const item = shopItems.find(i => i.tokenId === approvingId);
-      if (item) {
-        setBuyingId(item.tokenId);
-        toast.loading("Purchasing...", { id: "buy" });
-        try {
-          if (payWith === 'smart_wallet' && smartWalletAddress) {
-            buyFrom(smartWalletAddress, item.tokenId, 3);
-          } else {
-            buy(item.tokenId, 3);
-          }
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : "Transaction failed";
-          toast.error(msg);
-        }
-      }
-      setApprovingId(null);
-      resetApprove();
-    }
-  }, [approveSuccess, approvingId, shopItems, payWith, smartWalletAddress, buy, buyFrom, resetApprove]);
-
-  // Handle buy success
+  // Handle buy success (approval + purchase now run sequentially in handleBuyWithUsdc)
   useEffect(() => {
     if (buySuccess && buyingId !== null) {
       toast.dismiss("buy");
       toast.success("Purchase complete! 🎉");
       setBuyingId(null);
+      void refetchAllowance();
       resetBuy();
     }
-  }, [buySuccess, buyingId, resetBuy]);
+  }, [buySuccess, buyingId, refetchAllowance, resetBuy]);
 
   // Handle buyFrom success
   useEffect(() => {
@@ -658,9 +661,10 @@ export default function CollectibleInventoryBar({
       toast.dismiss("buy");
       toast.success("Purchase complete! 🎉");
       setBuyingId(null);
+      void refetchAllowance();
       resetBuyFrom();
     }
-  }, [buyFromSuccess, buyingId, resetBuyFrom]);
+  }, [buyFromSuccess, buyingId, refetchAllowance, resetBuyFrom]);
 
   // === PERK ACTIVATION ===
   const handleUsePerk = (
