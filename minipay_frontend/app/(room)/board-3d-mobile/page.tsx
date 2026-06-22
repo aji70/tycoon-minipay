@@ -1221,14 +1221,15 @@ function Board3DMobileContent() {
   const handleUsePerkFromBar = useCallback(
     (tokenId: bigint, perk: number, _strength: number, name: string) => {
       if (perk === 6 || perk === 10) {
-        setShowPerksModal(true);
+        if (!showPerksModal) setShowPerksModal(true);
         return;
       }
+      setShowPerksModal(false);
       burnConfirmedRef.current = false;
       resetBurn();
       setPendingBarPerk({ tokenId, perk, strength: _strength, name });
     },
-    [resetBurn]
+    [resetBurn, showPerksModal]
   );
 
   useEffect(() => {

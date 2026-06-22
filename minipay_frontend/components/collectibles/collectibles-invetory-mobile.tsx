@@ -101,6 +101,8 @@ interface CollectibleInventoryBarProps {
   userWalletAddresses?: string[];
   /** Refetch game state after a perk successfully updates the server (balance, perks, jail, etc.). */
   onPerkApplied?: () => void | Promise<void>;
+  /** Board chip bar path: simple confirm + burn on the board page (same as PerksBar). */
+  onUsePerk?: (tokenId: bigint, perk: number, strength: number, name: string) => void;
 }
 
 export default function CollectibleInventoryBar({
@@ -112,6 +114,7 @@ export default function CollectibleInventoryBar({
   userAddress,
   userWalletAddresses,
   onPerkApplied,
+  onUsePerk,
 }: CollectibleInventoryBarProps) {
   const { address: wagmiAddress, isConnected } = useAccount();
   const pathname = usePathname();
@@ -344,6 +347,12 @@ export default function CollectibleInventoryBar({
 
     if (isBurning) {
       toast("Wait for your perk to finish...", { icon: "⏳" });
+      return;
+    }
+
+    // Match PerksBar chips: board-level "Use perk?" for most perks; picker sheet only for Teleport / Exact Roll.
+    if (onUsePerk && perkId !== 6 && perkId !== 10) {
+      onUsePerk(tokenId, perkId, strength, name);
       return;
     }
 

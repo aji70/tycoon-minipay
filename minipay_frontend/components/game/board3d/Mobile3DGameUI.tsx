@@ -366,6 +366,7 @@ export default function Mobile3DGameUI({
                     endTurnAfterSpecial={endTurnAfterSpecial}
                     userAddress={me?.address}
                     onPerkApplied={onPerkApplied}
+                    onUsePerk={onUsePerk}
                   />
                 ) : (
                   <p className="text-slate-500 text-sm py-4">Join a game to see your perks.</p>
