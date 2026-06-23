@@ -498,6 +498,7 @@ function Board3DMobilePageContent() {
   const hasScheduledTurnEndRef = useRef(false);
   const turnEndInProgressRef = useRef(false);
   const lastTopHistoryIdRef = useRef<number | null>(null);
+  const wasMyTurnRef = useRef(false);
   const timeLeftFrozenAtRollRef = useRef<number | null>(null);
   const recordTimeoutCalledForTurnRef = useRef<number | null>(null);
 
@@ -978,11 +979,37 @@ function Board3DMobilePageContent() {
   }, [rollingDice, game, me]);
 
   useEffect(() => {
-    if (!isMyTurn) {
+    const turnJustStarted = isMyTurn && !wasMyTurnRef.current;
+    const turnJustEnded = !isMyTurn && wasMyTurnRef.current;
+    wasMyTurnRef.current = isMyTurn;
+
+    if (turnJustEnded) {
       doublesCountRef.current = 0;
       runningTotalRef.current = 0;
+      hasScheduledTurnEndRef.current = false;
+      setTurnEndScheduled(false);
+      return;
     }
+    if (!turnJustStarted) return;
+
+    setTurnEndScheduled(false);
+    setLastRollResultLive(null);
+    setBuyPrompted(false);
+    setLandedPositionForBuy(null);
+    setJailChoiceRequired(false);
+    landedPositionThisTurnRef.current = null;
+    pendingBuyPromptRef.current = false;
+    expectingDoublesRollAgainRef.current = false;
+    hasScheduledTurnEndRef.current = false;
+    rollingForPlayerIdRef.current = null;
   }, [isMyTurn]);
+
+  useEffect(() => {
+    if (!buyPrompted || justLandedProperty) return;
+    setBuyPrompted(false);
+    setLandedPositionForBuy(null);
+    pendingBuyPromptRef.current = false;
+  }, [buyPrompted, justLandedProperty]);
 
   const handleUsePerkFromBar = useCallback(
     (tokenId: bigint, perk: number, _strength: number, name: string) => {
@@ -2016,6 +2043,7 @@ function Board3DMobilePageContent() {
     return () => {
       clearTimeout(timer);
       hasScheduledTurnEndRef.current = false;
+      setTurnEndScheduled(false);
     };
   }, [isLiveGame, isMyTurn, lastRollResultLive, buyPrompted, jailChoiceRequired, rollingDice, END_TURN]);
 
@@ -2801,8 +2829,7 @@ function Board3DMobilePageContent() {
         isMyTurn &&
         meInJail &&
         !jailChoiceRequired &&
-        !rollingDice &&
-        !lastRollResultLive && (
+        !rollingDice && (
           <div
             className="fixed inset-0 flex items-center justify-center bg-black/60 p-4 z-[2147483647]"
           >
