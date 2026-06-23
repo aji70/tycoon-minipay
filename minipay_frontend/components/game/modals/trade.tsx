@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
+import { BOARD_MODAL_Z } from "@/lib/boardZIndex";
 import { Property } from "@/types/game";
 
 interface TradeModalProps {
@@ -145,7 +146,8 @@ export const TradeModal: React.FC<TradeModalProps> = (props) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm z-[2147483647]"
+      className="fixed inset-0 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      style={{ zIndex: BOARD_MODAL_Z }}
       onClick={onClose}
     >
       <motion.div

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { BOARD_MODAL_Z } from "@/lib/boardZIndex";
 import { Property, Player } from "@/types/game";
 import { X, Handshake } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
@@ -283,9 +284,9 @@ export default function TradeSection3D({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm z-[2147483647]"
+            className="fixed inset-0 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            style={{ zIndex: BOARD_MODAL_Z, position: "fixed" }}
             onClick={() => setDeleteConfirm(null)}
-            style={{ position: "fixed" }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}

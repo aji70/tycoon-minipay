@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, AlertTriangle, Info, X } from "lucide-react";
 import {
@@ -9,6 +10,7 @@ import {
   type BoardNotice,
   type BoardNoticeSeverity,
 } from "@/lib/boardNotice";
+import { BOARD_NOTICE_Z } from "@/lib/boardZIndex";
 
 const SEVERITY_STYLES: Record<
   BoardNoticeSeverity,
@@ -59,17 +61,33 @@ function NoticeContent({ notice }: { notice: BoardNotice }) {
 /** Dismissible notice strip above the board bottom nav — fed by gameBoardErrors helpers. */
 export default function BoardNoticeBanner() {
   const [notice, setNotice] = useState<BoardNotice | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => subscribeBoardNotice(setNotice), []);
+  useEffect(() => setMounted(true), []);
 
-  return (
+  // Re-append on each notice so we stay above modals that portal to body after us.
+  useEffect(() => {
+    if (!notice?.id || !rootRef.current) return;
+    document.body.appendChild(rootRef.current);
+  }, [notice?.id]);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="pointer-events-none fixed left-2 right-2 z-[9997]"
-      style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))" }}
+      ref={rootRef}
+      className="pointer-events-none fixed left-2 right-2"
+      style={{
+        zIndex: BOARD_NOTICE_Z,
+        bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))",
+      }}
     >
       <AnimatePresence mode="wait">
         {notice ? <NoticeContent notice={notice} /> : null}
       </AnimatePresence>
-    </div>
+    </div>,
+    document.body
   );
 }
