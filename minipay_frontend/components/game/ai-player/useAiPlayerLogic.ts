@@ -8,7 +8,8 @@ import { apiClient } from "@/lib/api";
 import { useEndAIGameAndClaim, useGetGameByCode } from "@/context/ContractProvider";
 import { ApiResponse } from "@/types/api";
 import { hotToastContractError } from "@/lib/utils/contractErrorHotToast";
-import { getContractErrorMessage, getTradeErrorMessage } from "@/lib/utils/contractErrors";
+import { getContractErrorMessage } from "@/lib/utils/contractErrors";
+import { gameBoardToastError, gameBoardTradeError, gameBoardContractError } from "@/lib/utils/gameBoardErrors";
 import { useGameTrades } from "@/hooks/useGameTrades";
 import { isAIPlayer } from "@/utils/gameUtils";
 import { instantAiRespondWhenTargetIsAi } from "@/lib/game/instantAiTradeResponse";
@@ -106,7 +107,7 @@ export function useAiPlayerLogic({
         return;
       }
       if (!targetPlayer || targetPlayer.user_id == null) {
-        toast.error("Invalid player");
+        gameBoardToastError("Invalid player");
         return;
       }
       // Clone to a plain object so modal/children don't hit reactive proxy or missing-field issues
@@ -163,7 +164,7 @@ export function useAiPlayerLogic({
           const tradeId = typeof rawId === "number" ? rawId : Number(rawId);
           if (!Number.isFinite(tradeId) || tradeId <= 0) {
             console.error("[handleCreateTrade] create succeeded but no trade id:", res.data);
-            toast.error("Trade sent, but server did not return a trade id — AI response skipped.");
+            gameBoardToastError("Trade sent, but server did not return a trade id — AI response skipped.");
             return;
           }
           const sentTrade = {
@@ -180,7 +181,7 @@ export function useAiPlayerLogic({
         }
       }
     } catch (error: unknown) {
-      toast.error(getTradeErrorMessage(error, "Failed to create trade"));
+      gameBoardTradeError(error, "Failed to create trade");
     }
   }, [
     me,
@@ -214,7 +215,7 @@ export function useAiPlayerLogic({
         try {
           const tradeId = Number(id);
           if (!Number.isFinite(tradeId)) {
-            toast.error("Invalid trade");
+            gameBoardToastError("Invalid trade");
             return;
           }
           await apiClient.delete(`/game-trade-requests/${tradeId}`);
@@ -223,7 +224,7 @@ export function useAiPlayerLogic({
           if (game?.code) queryClient.invalidateQueries({ queryKey: ["game", game.code] });
           if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
         } catch (error) {
-          toast.error(getTradeErrorMessage(error, "Failed to delete trade"));
+          gameBoardTradeError(error, "Failed to delete trade");
         }
         return;
       }
@@ -241,7 +242,7 @@ export function useAiPlayerLogic({
           if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
         }
       } catch (error) {
-        toast.error(getTradeErrorMessage(error, "Failed to update trade"));
+        gameBoardTradeError(error, "Failed to update trade");
       }
     },
     [tradeRequests, closeAiTradePopup, refreshTrades, game?.code, game?.id, queryClient]
@@ -257,12 +258,15 @@ export function useAiPlayerLogic({
     const myBal = Number(me.balance ?? 0);
     const theirBal = Number(counterparty?.balance ?? 0);
     if (myBal < offerCash) {
-      toast.error(`You only have $${myBal.toLocaleString()}. Lower your offered cash.`);
+      gameBoardToastError(`You only have $${myBal.toLocaleString()}. Lower your offered cash.`, {
+        severity: "warning",
+      });
       return;
     }
     if (theirBal < requestCash) {
-      toast.error(
-        `${counterparty?.username ?? "They"} only has $${theirBal.toLocaleString()} — reduce the cash you're asking for.`
+      gameBoardToastError(
+        `${counterparty?.username ?? "They"} only has $${theirBal.toLocaleString()} — reduce the cash you're asking for.`,
+        { severity: "warning" }
       );
       return;
     }
@@ -297,9 +301,9 @@ export function useAiPlayerLogic({
         if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
         return;
       }
-      toast.error(getTradeErrorMessage({ message: inner?.message }, "Failed to send counter trade"));
+      gameBoardTradeError({ message: inner?.message }, "Failed to send counter trade");
     } catch (error: unknown) {
-      toast.error(getTradeErrorMessage(error, "Failed to send counter trade"));
+      gameBoardTradeError(error, "Failed to send counter trade");
     }
   }, [
     counterModal.trade,
@@ -331,7 +335,7 @@ export function useAiPlayerLogic({
           if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
         }
       } catch (error: any) {
-        toast.error(getContractErrorMessage(error, "Failed to develop property"));
+        gameBoardContractError(error, "Failed to develop property");
       }
     },
     [isNext, me, game.id, game?.code, queryClient]
@@ -350,9 +354,9 @@ export function useAiPlayerLogic({
           toast.success("Property downgraded successfully");
           if (game?.code) queryClient.invalidateQueries({ queryKey: ["game", game.code] });
           if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
-        } else toast.error(res.data?.message ?? "Failed to downgrade property");
+        } else gameBoardToastError(res.data?.message ?? "Failed to downgrade property");
       } catch (error: any) {
-        toast.error(getContractErrorMessage(error, "Failed to downgrade property"));
+        gameBoardContractError(error, "Failed to downgrade property");
       }
     },
     [isNext, me, game.id, game?.code, queryClient]
@@ -371,9 +375,9 @@ export function useAiPlayerLogic({
           toast.success("Property mortgaged successfully");
           if (game?.code) queryClient.invalidateQueries({ queryKey: ["game", game.code] });
           if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
-        } else toast.error(res.data?.message ?? "Failed to mortgage property");
+        } else gameBoardToastError(res.data?.message ?? "Failed to mortgage property");
       } catch (error: any) {
-        toast.error(getContractErrorMessage(error, "Failed to mortgage property"));
+        gameBoardContractError(error, "Failed to mortgage property");
       }
     },
     [isNext, me, game.id, game?.code, queryClient]
@@ -392,9 +396,9 @@ export function useAiPlayerLogic({
           toast.success("Property unmortgaged successfully");
           if (game?.code) queryClient.invalidateQueries({ queryKey: ["game", game.code] });
           if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
-        } else toast.error(res.data?.message ?? "Failed to unmortgage property");
+        } else gameBoardToastError(res.data?.message ?? "Failed to unmortgage property");
       } catch (error: any) {
-        toast.error(getContractErrorMessage(error, "Failed to unmortgage property"));
+        gameBoardContractError(error, "Failed to unmortgage property");
       }
     },
     [isNext, me, game.id, game?.code, queryClient]
@@ -422,7 +426,7 @@ export function useAiPlayerLogic({
         const message =
           error.response?.data?.message ||
           getContractErrorMessage(error, "Failed to transfer property");
-        toast.error(message);
+        gameBoardToastError(message);
         console.error("Property transfer failed:", error);
       }
     },
@@ -437,9 +441,9 @@ export function useAiPlayerLogic({
           data: { game_id: game.id },
         });
         if (res?.data?.success) toast.success("Property returned to bank successfully");
-        else toast.error(res.data?.message ?? "Failed to return property");
+        else gameBoardToastError(res.data?.message ?? "Failed to return property");
       } catch (error: any) {
-        toast.error(getContractErrorMessage(error, "Failed to return property"));
+        gameBoardContractError(error, "Failed to return property");
       }
     },
     [game.id]
@@ -461,7 +465,7 @@ export function useAiPlayerLogic({
       const gamePlayerId = getGamePlayerId(player.address);
 
       if (!gamePlayerId) {
-        toast.error("Cannot claim: unable to determine your game player ID");
+        gameBoardToastError("Cannot claim: unable to determine your game player ID");
         return;
       }
 

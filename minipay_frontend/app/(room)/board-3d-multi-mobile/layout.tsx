@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import BoardNoticeBanner from "@/components/game/board3d/BoardNoticeBanner";
 
-function Board3DMobileLoading() {
+function Board3DMultiMobileLoading() {
   return (
     <div
       className="fixed inset-0 w-full flex items-center justify-center bg-[#010F10]"
@@ -15,11 +15,11 @@ function Board3DMobileLoading() {
   );
 }
 
-export default function Board3DMobileLayout({
+export default function Board3DMultiMobileLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <Suspense fallback={<Board3DMobileLoading />}>
+    <Suspense fallback={<Board3DMultiMobileLoading />}>
       {children}
       <BoardNoticeBanner />
     </Suspense>

@@ -30,6 +30,7 @@ import { getDiceValues } from "@/components/game/constants";
 import { JAIL_POSITION, MOVE_ANIMATION_MS_PER_SQUARE } from "@/components/game/constants";
 import { hotToastContractError } from "@/lib/utils/contractErrorHotToast";
 import { isBenignTurnOrderError, getContractErrorMessage } from "@/lib/utils/contractErrors";
+import { gameBoardToastError } from "@/lib/utils/gameBoardErrors";
 import { useGuestAuthOptional } from "@/context/GuestAuthContext";
 import { usePreventDoubleSubmit } from "@/hooks/usePreventDoubleSubmit";
 import { useGameTrades } from "@/hooks/useGameTrades";
@@ -418,7 +419,7 @@ function Board3DMobilePageContent() {
       if (data?.message) toast.success(data.message);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(err?.response?.data?.message || getContractErrorMessage(err, "Failed to request start"));
+      gameBoardToastError(err?.response?.data?.message || getContractErrorMessage(err, "Failed to request start"));
     } finally {
       setRequestStartLoading(false);
     }
@@ -671,7 +672,7 @@ function Board3DMobilePageContent() {
   const showToast = useCallback((message: string, type?: "success" | "error" | "default") => {
     if (type === "error" && isBenignTurnOrderError({ message })) return;
     if (type === "success") toast.success(message);
-    else if (type === "error") toast.error(message);
+    else if (type === "error") gameBoardToastError(message);
     else toast(message);
   }, []);
 
@@ -995,7 +996,7 @@ function Board3DMobilePageContent() {
         inJail: meInJail,
       });
       if (blockMsg) {
-        toast.error(blockMsg);
+        gameBoardToastError(blockMsg, { severity: "warning" });
         return;
       }
       setShowPerksModal(false);
@@ -1090,10 +1091,10 @@ function Board3DMobilePageContent() {
           toast.success("Perk used & collectible burned!", { id: toastId });
           await refetchGame();
         } else if (perk !== 6 && perk !== 10) {
-          toast.error(failureMessage ?? getPerkFailureFallback(perk), { id: toastId });
+          gameBoardToastError(failureMessage ?? getPerkFailureFallback(perk), { id: toastId });
         }
       } catch (err) {
-        toast.error(getPerkActivationError(err, "Activation failed"), { id: toastId });
+        gameBoardToastError(getPerkActivationError(err, "Activation failed"), { id: toastId });
       } finally {
         burnConfirmedRef.current = false;
         resetBurn();
@@ -1271,7 +1272,7 @@ function Board3DMobilePageContent() {
               if (isBenignTurnOrderError({ message: String(endMsg) })) {
                 await refetchGame();
               } else {
-                toast.error(endMsg);
+                gameBoardToastError(endMsg);
                 await refetchGame();
               }
             } else {
@@ -1873,7 +1874,7 @@ function Board3DMobilePageContent() {
     if (!game?.id || !me?.user_id || !activeAuction?.id || auctionSubmitting) return;
     const amount = auctionBidAmount.trim() ? parseInt(auctionBidAmount, 10) : null;
     if (amount != null && (isNaN(amount) || amount <= (activeAuction.current_high ?? 0))) {
-      toast.error("Enter a bid higher than current high");
+      gameBoardToastError("Enter a bid higher than current high", { severity: "warning" });
       return;
     }
     setAuctionSubmitting(true);
@@ -2245,7 +2246,7 @@ function Board3DMobilePageContent() {
       });
       setHasLeftGame(true);
       await refetchGame();
-      toast.error("Game over! You have declared bankruptcy.");
+      gameBoardToastError("Game over! You have declared bankruptcy.");
       setShowBankruptcyModal(true);
     } catch (err) {
       hotToastContractError(err, "Failed to end game");
@@ -2699,7 +2700,7 @@ function Board3DMobilePageContent() {
                     } catch (e) {
                       burnConfirmedRef.current = false;
                       resetBurn();
-                      toast.error(getContractErrorMessage(e, "Burn failed"));
+                      gameBoardToastError(getContractErrorMessage(e, "Burn failed"));
                       setPendingBarPerk(null);
                     }
                   }}

@@ -5,7 +5,8 @@
 
 import toast from "react-hot-toast";
 import { apiClient } from "@/lib/api";
-import { getApiErrorDetail, getTradeErrorMessage } from "@/lib/utils/contractErrors";
+import { getApiErrorDetail } from "@/lib/utils/contractErrors";
+import { gameBoardToastError, gameBoardTradeError } from "@/lib/utils/gameBoardErrors";
 import type { Game, Player, Property, GameProperty } from "@/types/game";
 import type { ApiResponse } from "@/types/api";
 import {
@@ -55,7 +56,7 @@ export async function instantAiRespondWhenTargetIsAi(params: {
 
   if (!Number.isFinite(t.id) || t.id <= 0) {
     console.error("[instantAiRespondWhenTargetIsAi] invalid trade id:", trade);
-    toast.error("Trade was created without a valid id — AI could not respond. Try again.");
+    gameBoardToastError("Trade was created without a valid id — AI could not respond. Try again.");
     return;
   }
 
@@ -78,7 +79,7 @@ export async function instantAiRespondWhenTargetIsAi(params: {
   function tradeErrorToast(error: unknown, fallback: string) {
     const detail = getApiErrorDetail(error);
     console.error("[instantAiRespondWhenTargetIsAi]", { decision, tradeId: sentTrade.id, detail, error });
-    toast.error(getTradeErrorMessage(error, fallback));
+    gameBoardTradeError(error, fallback);
   }
 
   try {

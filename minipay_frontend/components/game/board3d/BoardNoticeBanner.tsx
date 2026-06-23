@@ -1,0 +1,75 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle, AlertTriangle, Info, X } from "lucide-react";
+import {
+  clearBoardNotice,
+  subscribeBoardNotice,
+  type BoardNotice,
+  type BoardNoticeSeverity,
+} from "@/lib/boardNotice";
+
+const SEVERITY_STYLES: Record<
+  BoardNoticeSeverity,
+  { container: string; Icon: typeof AlertCircle }
+> = {
+  error: {
+    container: "bg-red-950/95 border-red-500/50 text-red-100",
+    Icon: AlertCircle,
+  },
+  warning: {
+    container: "bg-amber-950/95 border-amber-500/50 text-amber-100",
+    Icon: AlertTriangle,
+  },
+  info: {
+    container: "bg-slate-800/95 border-cyan-500/40 text-cyan-100",
+    Icon: Info,
+  },
+};
+
+function NoticeContent({ notice }: { notice: BoardNotice }) {
+  const { container, Icon } = SEVERITY_STYLES[notice.severity];
+
+  return (
+    <motion.div
+      key={notice.id}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 8 }}
+      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+      role="alert"
+      aria-live="polite"
+      className={`pointer-events-auto flex items-start gap-2.5 rounded-xl border px-3 py-2.5 shadow-lg backdrop-blur-md ${container}`}
+    >
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 opacity-90" aria-hidden />
+      <p className="flex-1 text-sm leading-snug">{notice.message}</p>
+      <button
+        type="button"
+        onClick={() => clearBoardNotice(notice.id)}
+        className="shrink-0 rounded-md p-1 opacity-70 transition hover:bg-white/10 hover:opacity-100"
+        aria-label="Dismiss"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </motion.div>
+  );
+}
+
+/** Dismissible notice strip above the board bottom nav — fed by gameBoardErrors helpers. */
+export default function BoardNoticeBanner() {
+  const [notice, setNotice] = useState<BoardNotice | null>(null);
+
+  useEffect(() => subscribeBoardNotice(setNotice), []);
+
+  return (
+    <div
+      className="pointer-events-none fixed left-2 right-2 z-[9997]"
+      style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))" }}
+    >
+      <AnimatePresence mode="wait">
+        {notice ? <NoticeContent notice={notice} /> : null}
+      </AnimatePresence>
+    </div>
+  );
+}
