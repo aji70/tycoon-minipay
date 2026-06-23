@@ -269,3 +269,40 @@ export function getContractErrorMessage(
 
   return defaultMessage;
 }
+
+/** Full backend error text for debugging toasts (ApiError.message or response body). */
+export function getApiErrorDetail(error: unknown, maxLen = 320): string {
+  const e = error as {
+    message?: string;
+    response?: { data?: { message?: string; error?: string } };
+    data?: { message?: string; error?: string };
+  };
+  const raw =
+    e?.response?.data?.message ??
+    e?.response?.data?.error ??
+    e?.data?.message ??
+    e?.data?.error ??
+    e?.message ??
+    "";
+  if (typeof raw !== "string" || !raw.trim()) return "";
+  const trimmed = raw.trim();
+  return trimmed.length > maxLen ? `${trimmed.slice(0, maxLen)}…` : trimmed;
+}
+
+/** Shorter user-facing hint when the backend leaks a game_play_history INSERT failure. */
+export function explainGamePlayerHistoryError(detail: string): string {
+  const lower = detail.toLowerCase();
+  if (!lower.includes("game_play_history") && !lower.includes("game_player_history")) {
+    return detail;
+  }
+
+  const afterSql =
+    detail.match(/game_play(?:er)?_history[^]*?-\s*(.+)$/i)?.[1]?.trim() ??
+    detail.match(/:\s*(Column .+)$/i)?.[1]?.trim() ??
+    detail.match(/:\s*(Cannot .+)$/i)?.[1]?.trim() ??
+    detail.match(/:\s*(Field .+)$/i)?.[1]?.trim() ??
+    detail.match(/:\s*(Data truncated .+)$/i)?.[1]?.trim();
+
+  const reason = afterSql && afterSql.length < 200 ? afterSql : detail.slice(0, 200);
+  return `Server could not save the game action log (game_play_history). If this happens on trade accept, the database may be missing the trade_accept action enum — ask ops to run backend migrations. ${reason}`;
+}

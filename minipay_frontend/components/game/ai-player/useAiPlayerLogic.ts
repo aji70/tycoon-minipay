@@ -159,10 +159,16 @@ export function useAiPlayerLogic({
         refreshTrades();
 
         if (isAI) {
-          const tradeId = res.data?.data?.id ?? Date.now();
+          const rawId = res.data?.data?.id;
+          const tradeId = typeof rawId === "number" ? rawId : Number(rawId);
+          if (!Number.isFinite(tradeId) || tradeId <= 0) {
+            console.error("[handleCreateTrade] create succeeded but no trade id:", res.data);
+            toast.error("Trade sent, but server did not return a trade id — AI response skipped.");
+            return;
+          }
           const sentTrade = {
             ...payload,
-            id: typeof tradeId === "number" ? tradeId : Number(tradeId),
+            id: tradeId,
           };
           await instantAiRespondWhenTargetIsAi({
             game,
@@ -173,8 +179,8 @@ export function useAiPlayerLogic({
           });
         }
       }
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to create trade");
+    } catch (error: unknown) {
+      toast.error(getContractErrorMessage(error, "Failed to create trade"), { duration: 8000 });
     }
   }, [
     me,
