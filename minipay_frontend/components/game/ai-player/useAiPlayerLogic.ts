@@ -8,7 +8,7 @@ import { apiClient } from "@/lib/api";
 import { useEndAIGameAndClaim, useGetGameByCode } from "@/context/ContractProvider";
 import { ApiResponse } from "@/types/api";
 import { hotToastContractError } from "@/lib/utils/contractErrorHotToast";
-import { getContractErrorMessage } from "@/lib/utils/contractErrors";
+import { getContractErrorMessage, getTradeErrorMessage } from "@/lib/utils/contractErrors";
 import { useGameTrades } from "@/hooks/useGameTrades";
 import { isAIPlayer } from "@/utils/gameUtils";
 import { instantAiRespondWhenTargetIsAi } from "@/lib/game/instantAiTradeResponse";
@@ -180,7 +180,7 @@ export function useAiPlayerLogic({
         }
       }
     } catch (error: unknown) {
-      toast.error(getContractErrorMessage(error, "Failed to create trade"));
+      toast.error(getTradeErrorMessage(error, "Failed to create trade"));
     }
   }, [
     me,
@@ -223,7 +223,7 @@ export function useAiPlayerLogic({
           if (game?.code) queryClient.invalidateQueries({ queryKey: ["game", game.code] });
           if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
         } catch (error) {
-          toast.error(getContractErrorMessage(error, "Failed to delete trade"));
+          toast.error(getTradeErrorMessage(error, "Failed to delete trade"));
         }
         return;
       }
@@ -241,7 +241,7 @@ export function useAiPlayerLogic({
           if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
         }
       } catch (error) {
-        toast.error("Failed to update trade");
+        toast.error(getTradeErrorMessage(error, "Failed to update trade"));
       }
     },
     [tradeRequests, closeAiTradePopup, refreshTrades, game?.code, game?.id, queryClient]
@@ -297,9 +297,9 @@ export function useAiPlayerLogic({
         if (game?.id) queryClient.invalidateQueries({ queryKey: ["game_properties", game.id] });
         return;
       }
-      toast.error(inner?.message ?? "Failed to send counter trade");
+      toast.error(getTradeErrorMessage({ message: inner?.message }, "Failed to send counter trade"));
     } catch (error: unknown) {
-      toast.error(getContractErrorMessage(error, "Failed to send counter trade"));
+      toast.error(getTradeErrorMessage(error, "Failed to send counter trade"));
     }
   }, [
     counterModal.trade,

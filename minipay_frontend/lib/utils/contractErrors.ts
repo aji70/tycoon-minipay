@@ -312,3 +312,45 @@ export function getApiErrorDetail(error: unknown, maxLen = 320): string {
   const trimmed = raw.trim();
   return trimmed.length > maxLen ? `${trimmed.slice(0, maxLen)}…` : trimmed;
 }
+
+/** User-friendly trade errors (e.g. auto-declined after rolling). */
+export function getTradeErrorMessage(
+  error: unknown,
+  fallback = "Could not update this trade. Try refreshing the trade list."
+): string {
+  const raw = getApiErrorDetail(error);
+  if (!raw) return fallback;
+  const lower = raw.toLowerCase();
+
+  if (
+    lower.includes("auto-declined") ||
+    lower.includes("rolled without") ||
+    lower.includes("finish your roll") ||
+    lower.includes("when you move") ||
+    lower.includes("when you rolled")
+  ) {
+    return raw.length <= 200 ? raw : "This trade expired — unanswered incoming offers are declined when you finish rolling and move.";
+  }
+  if (
+    lower.includes("trade not available") ||
+    lower.includes("already resolved") ||
+    lower.includes("no longer pending") ||
+    lower.includes("already declined")
+  ) {
+    return "This trade is no longer available. If you rolled first, incoming offers are auto-declined when your move completes.";
+  }
+  if (lower.includes("trade not found")) {
+    return "That trade no longer exists — refresh the trade list.";
+  }
+  if (lower.includes("target player is in jail")) {
+    return "You can't trade with a player who is in jail.";
+  }
+  if (lower.includes("insufficient balance")) {
+    return "Not enough cash for this trade.";
+  }
+  if (lower.includes("invalid") && lower.includes("propert")) {
+    return "One of the properties in this trade is no longer owned by the right player.";
+  }
+
+  return sanitizeApiErrorForToast(raw, fallback);
+}
