@@ -6,6 +6,7 @@ import herobg from "@/public/heroBg.png";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import HeroMarketingContent from "@/components/guest/HeroMarketingContent";
+import HeroNoticeBanner from "@/components/guest/HeroNoticeBanner";
 
 const ParticleBackground = dynamic(
   () => import("@/components/hero/ParticleBackground").then((m) => ({ default: m.ParticleBackground })),
@@ -154,6 +155,8 @@ const HeroSection: React.FC = () => {
       <div className="hero-overlay-fade-in">
         <WorldStatsBar playersOnline={1234} propertiesOwned={5678} tokensInPlay="12.5M" />
       </div>
+
+      <HeroNoticeBanner />
     </section>
   );
 };
