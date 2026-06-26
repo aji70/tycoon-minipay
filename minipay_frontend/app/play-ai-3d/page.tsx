@@ -1,6 +1,7 @@
 "use client";
 
 import PlayWithAI3DMobile from "@/components/settings/game-ai-3d-mobile";
+import PageNoticeBanner from "@/components/ui/PageNoticeBanner";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useIsRegistered } from "@/context/ContractProvider";
@@ -50,6 +51,7 @@ export default function PlayAI3DPage() {
   return (
     <main className="w-full overflow-x-hidden min-h-screen bg-gradient-to-br from-[#0E282A] via-slate-900 to-slate-950">
       <PlayWithAI3DMobile />
+      <PageNoticeBanner />
     </main>
   );
 }

@@ -30,11 +30,12 @@ const SEVERITY_STYLES: Record<
   },
 };
 
-export type NoticePlacement = "board" | "hero";
+export type NoticePlacement = "board" | "hero" | "page";
 
 const BOTTOM_OFFSET: Record<NoticePlacement, string> = {
   board: "calc(4.75rem + env(safe-area-inset-bottom, 0px))",
   hero: "calc(var(--mobile-nav-height, 82px) + env(safe-area-inset-bottom, 0px) + 0.5rem)",
+  page: "calc(var(--mobile-nav-height, 82px) + env(safe-area-inset-bottom, 0px) + 0.5rem)",
 };
 
 function NoticeContent({ notice }: { notice: BoardNotice }) {

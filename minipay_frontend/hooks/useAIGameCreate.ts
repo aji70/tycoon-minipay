@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAccount, useChainId } from "wagmi";
 import { toast } from "react-toastify";
 import { getContractErrorMessage } from "@/lib/utils/contractErrors";
+import {
+  pageToastError,
+  pageToastWarning,
+} from "@/lib/utils/pageNoticeErrors";
 import { resolveChainForBackend } from "@/lib/utils/chain";
 import { generateGameCode } from "@/lib/utils/games";
 import { apiClient } from "@/lib/api";
@@ -118,11 +122,16 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
       `Summoning ${settings.aiCount} AI opponent${settings.aiCount > 1 ? "s" : ""}...`
     );
 
+    const fail = (message: string, severity: "error" | "warning" = "error") => {
+      toast.dismiss(toastId);
+      if (severity === "warning") pageToastWarning(message);
+      else pageToastError(message);
+    };
+
     try {
       await ensureMiniPayWalletReady();
     } catch (err: unknown) {
-      const msg = (err as Error)?.message ?? "Connect your wallet in MiniPay, then try again.";
-      toast.update(toastId, { render: msg, type: "error", isLoading: false, autoClose: 8000 });
+      fail((err as Error)?.message ?? "Connect your wallet in MiniPay, then try again.");
       return;
     }
 
@@ -160,18 +169,20 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
         router.push(board3DUrl ? `${board3DUrl}${gameCode}` : `/board-3d-mobile?gameCode=${gameCode}`);
       } catch (err: any) {
         const msg = err?.response?.data?.message ?? err?.message ?? "Failed to create AI game.";
-        toast.update(toastId, { render: msg, type: "error", isLoading: false, autoClose: 8000 });
+        fail(msg);
       }
       return;
     }
 
     if (!address || !username) {
-      toast.error("Please connect your wallet and register first!", { autoClose: 5000 });
+      toast.dismiss(toastId);
+      pageToastError("Please connect your wallet and register first!");
       return;
     }
 
     if (!contractAddress) {
-      toast.error("Game contract not deployed on this network.");
+      toast.dismiss(toastId);
+      pageToastError("Game contract not deployed on this network.");
       return;
     }
 
@@ -180,12 +191,7 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
     const usernameResult = await refetchUsername();
     const usernameNow = (usernameResult?.data as string | undefined) ?? username ?? "";
     if (!usernameNow.trim()) {
-      toast.update(toastId, {
-        render: "Could not load your on-chain username. Refresh and try again.",
-        type: "error",
-        isLoading: false,
-        autoClose: 6000,
-      });
+      fail("Could not load your on-chain username. Refresh and try again.");
       return;
     }
     if (registeredNow !== true) {
@@ -203,32 +209,19 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
       } catch (apiErr: unknown) {
         const status = (apiErr as { response?: { status?: number } })?.response?.status;
         if (status === 401) {
-          toast.update(toastId, {
-            render: "Log in to your account (or create one on the home page), then try again.",
-            type: "warning",
-            isLoading: false,
-            autoClose: 8000,
-          });
+          fail("Log in to your account (or create one on the home page), then try again.", "warning");
           return;
         }
         if (status === 503 || status === 500) {
           const msg = (apiErr as { response?: { data?: { message?: string } } })?.response?.data?.message;
-          toast.update(toastId, {
-            render: msg || "Backend could not register you. Try registering on the home page with your wallet.",
-            type: "error",
-            isLoading: false,
-            autoClose: 8000,
-          });
+          fail(msg || "Backend could not register you. Try registering on the home page with your wallet.");
           return;
         }
       }
       if (registeredNow !== true) {
-        toast.update(toastId, {
-          render: "You’re not registered on-chain. Complete registration on the home page (Register with your wallet), then try again.",
-          type: "error",
-          isLoading: false,
-          autoClose: 8000,
-        });
+        fail(
+          "You’re not registered on-chain. Complete registration on the home page (Register with your wallet), then try again."
+        );
         return;
       }
     }
@@ -316,12 +309,7 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
         typeof rawMessage === "string" && rawMessage.toLowerCase().includes("not registered")
           ? "You’re not registered on-chain. Go to the home page, connect your wallet, and complete Register (sign the transaction), then try creating an AI game again."
           : rawMessage;
-      toast.update(toastId, {
-        render: message,
-        type: "error",
-        isLoading: false,
-        autoClose: 8000,
-      });
+      fail(message);
     }
   };
 
