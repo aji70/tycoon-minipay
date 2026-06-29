@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount, useChainId } from "wagmi";
-import { toast } from "react-toastify";
 import { getContractErrorMessage } from "@/lib/utils/contractErrors";
 import {
   pageToastError,
@@ -118,12 +117,7 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
   );
 
   const handlePlay = async () => {
-    const toastId = toast.loading(
-      `Summoning ${settings.aiCount} AI opponent${settings.aiCount > 1 ? "s" : ""}...`
-    );
-
     const fail = (message: string, severity: "error" | "warning" = "error") => {
-      toast.dismiss(toastId);
       if (severity === "warning") pageToastWarning(message);
       else pageToastError(message);
     };
@@ -137,7 +131,6 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
 
     if (isGuest) {
       try {
-        toast.update(toastId, { render: "Creating AI game (guest)..." });
         const res = await apiClient.post<any>("/games/create-ai-as-guest", {
           code: gameCode,
           symbol: settings.symbol,
@@ -160,12 +153,6 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
         const dbGameId = data?.data?.id ?? data?.id;
         if (!dbGameId) throw new Error("Backend did not return game ID");
 
-        toast.update(toastId, {
-          render: "Battle begins! Good luck, Tycoon!",
-          type: "success",
-          isLoading: false,
-          autoClose: 5000,
-        });
         router.push(board3DUrl ? `${board3DUrl}${gameCode}` : `/board-3d-mobile?gameCode=${gameCode}`);
       } catch (err: any) {
         const msg = err?.response?.data?.message ?? err?.message ?? "Failed to create AI game.";
@@ -175,13 +162,11 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
     }
 
     if (!address || !username) {
-      toast.dismiss(toastId);
       pageToastError("Please connect your wallet and register first!");
       return;
     }
 
     if (!contractAddress) {
-      toast.dismiss(toastId);
       pageToastError("Game contract not deployed on this network.");
       return;
     }
@@ -196,7 +181,6 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
     }
     if (registeredNow !== true) {
       try {
-        toast.update(toastId, { render: "Registering you on-chain (one moment)…", isLoading: true });
         const res = await apiClient.post<{ success?: boolean; alreadyRegistered?: boolean; message?: string }>(
           "/auth/register-on-chain",
           { chain: chainName }
@@ -227,11 +211,8 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
     }
 
     try {
-      toast.update(toastId, { render: "Creating AI game (sign in wallet)..." });
       const onChainGameId = await createAiGame(usernameNow);
       if (!onChainGameId) throw new Error("Failed to create game on-chain");
-
-      toast.update(toastId, { render: "Saving game to server..." });
 
       let dbGameId: string | number | undefined;
       try {
@@ -270,8 +251,6 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
         throw new Error(backendError.response?.data?.message || "Failed to save game on server");
       }
 
-      toast.update(toastId, { render: "Adding AI opponents..." });
-
       // Use backend endpoint to add AI players (works for wallet-created games; join endpoint requires on-chain verification)
       try {
         const addAiRes = await apiClient.post(`/games/${dbGameId}/add-ai-players`, {
@@ -293,13 +272,6 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
       } catch (statusErr) {
         console.warn("Failed to set game status to RUNNING:", statusErr);
       }
-
-      toast.update(toastId, {
-        render: "Battle begins! Good luck, Tycoon!",
-        type: "success",
-        isLoading: false,
-        autoClose: 5000,
-      });
 
       router.push(board3DUrl ? `${board3DUrl}${gameCode}` : `/board-3d-mobile?gameCode=${gameCode}`);
     } catch (err: any) {
