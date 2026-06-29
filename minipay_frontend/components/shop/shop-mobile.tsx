@@ -45,6 +45,7 @@ import {
   instantCashTierBadge,
   INSTANT_CASH_SHOP_SUMMARY,
 } from '@/lib/perks/instantCash';
+import { INITIAL_COLLECTIBLES } from '@/components/rewards/rewardsConstants';
 
 import {
   useRewardBuyCollectible,
@@ -57,6 +58,8 @@ import {
   useRewardTokenAddresses,
   useUserRegistryWallet,
   useRewardStockBundle,
+  useRewardStockShop,
+  useRewardRestockCollectible,
   useReadChainIdOrCelo,
   useUserWalletApproveERC20,
 } from '@/context/ContractProvider';
@@ -178,6 +181,8 @@ export default function GameShopMobile() {
   const chainId = useReadChainIdOrCelo();
   const auth = useGuestAuthOptional();
   const stockBundleHook = useRewardStockBundle();
+  const stockShopHook = useRewardStockShop();
+  const restockCollectibleHook = useRewardRestockCollectible();
 
   const contractAddress = REWARD_CONTRACT_ADDRESSES[chainId as keyof typeof REWARD_CONTRACT_ADDRESSES] as Address | undefined;
   const { usdcAddress: usdcTokenAddress, cusdcAddress, usdtAddress } = useRewardTokenAddresses();
@@ -229,6 +234,11 @@ export default function GameShopMobile() {
   const [ngnLoadingTokenId, setNgnLoadingTokenId] = useState<string | null>(null);
   const [bundleBuyingName, setBundleBuyingName] = useState<string | null>(null);
   const [stockAllBundlesProgress, setStockAllBundlesProgress] = useState<{ active: boolean; current: number; total: number }>({
+    active: false,
+    current: 0,
+    total: 0,
+  });
+  const [stockPerksProgress, setStockPerksProgress] = useState<{ active: boolean; current: number; total: number }>({
     active: false,
     current: 0,
     total: 0,
@@ -454,55 +464,119 @@ export default function GameShopMobile() {
     query: { enabled: shopTokenIds.length > 0 && !!contractAddress },
   });
 
-  const shopItems = useMemo(() => {
-    if (!shopInfoResults) return [];
+  const onChainShopByKey = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        tokenId: bigint;
+        perk: number;
+        strength: number;
+        tycPrice: bigint;
+        usdcPrice: bigint;
+        cusdcPrice: bigint;
+        usdtPrice: bigint;
+        stock: bigint;
+      }
+    >();
+    if (!shopInfoResults) return map;
 
-    return shopInfoResults
-      .map((result, index) => {
-        if (result.status !== 'success') return null;
-        const [perk, strength, tycPrice, usdcPrice, cusdcPrice, usdtPrice, stock] = result.result as [number, bigint, bigint, bigint, bigint, bigint, bigint];
-        if (stock === BigInt(0)) return null;
-        if (isShopPerkHidden(Number(perk))) return null;
-
-        const tokenId = shopTokenIds[index];
-        const strengthNum = Number(strength);
-        const meta = perkMetadata.find((m) => m.perk === perk) || {
-          name: `Perk #${perk}`,
-          desc: 'Use during a game for a strategic advantage.',
-          icon: <Gem className="w-12 h-12 text-gray-400" />,
-          image: '/game/shop/placeholder.jpg',
-        };
-
-        const displayName = Number(perk) === 5 ? instantCashShopName(strengthNum) : meta.name;
-        const displayDesc = Number(perk) === 5 ? instantCashShopDescription(strengthNum) : meta.desc;
-
-        const usdcPriceStr = formatUnits(usdcPrice, 6);
-        const baseNgnPrice = Math.round(Number(usdcPriceStr) * USDC_TO_NGN_RATE);
-        const ngnPrice = calculateNgnPrice(baseNgnPrice);
-
-        return {
-          tokenId,
-          perk,
-          strength: Number(strength),
-          tycPrice: formatUnits(tycPrice, 18),
-          usdcPrice: usdcPriceStr,
-          cusdcPrice: formatUnits(cusdcPrice, 6),
-          usdtPrice: formatUnits(usdtPrice, 6),
-          ngnPrice,
-          stock: Number(stock),
-          comingSoon: false as const,
-          ...meta,
-          name: displayName,
-          desc: displayDesc,
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null);
+    shopInfoResults.forEach((result, index) => {
+      if (result.status !== 'success') return;
+      const [perk, strength, tycPrice, usdcPrice, cusdcPrice, usdtPrice, stock] = result.result as [
+        number,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+      ];
+      const tokenId = shopTokenIds[index];
+      if (!tokenId) return;
+      map.set(`${Number(perk)}:${Number(strength)}`, {
+        tokenId,
+        perk: Number(perk),
+        strength: Number(strength),
+        tycPrice,
+        usdcPrice,
+        cusdcPrice,
+        usdtPrice,
+        stock,
+      });
+    });
+    return map;
   }, [shopInfoResults, shopTokenIds]);
+
+  const shopItems = useMemo(() => {
+    const buildRow = (
+      perk: number,
+      strengthNum: number,
+      onChain: {
+        tokenId: bigint;
+        perk: number;
+        strength: number;
+        tycPrice: bigint;
+        usdcPrice: bigint;
+        cusdcPrice: bigint;
+        usdtPrice: bigint;
+        stock: bigint;
+      } | undefined,
+      catalogUsdc?: string,
+      catalogTyc?: string
+    ) => {
+      const meta = perkMetadata.find((m) => m.perk === perk) || {
+        name: `Perk #${perk}`,
+        desc: 'Use during a game for a strategic advantage.',
+        icon: <Gem className="w-12 h-12 text-gray-400" />,
+        image: '/game/shop/placeholder.jpg',
+      };
+      const displayName = perk === 5 ? instantCashShopName(strengthNum) : meta.name;
+      const displayDesc = perk === 5 ? instantCashShopDescription(strengthNum) : meta.desc;
+      const usdcPriceStr = onChain ? formatUnits(onChain.usdcPrice, 6) : (catalogUsdc ?? '0');
+      const baseNgnPrice = Math.round(Number(usdcPriceStr) * USDC_TO_NGN_RATE);
+      const ngnPrice = calculateNgnPrice(baseNgnPrice);
+
+      return {
+        tokenId: onChain?.tokenId ?? null,
+        perk,
+        strength: strengthNum,
+        tycPrice: onChain ? formatUnits(onChain.tycPrice, 18) : (catalogTyc ?? '0'),
+        usdcPrice: usdcPriceStr,
+        cusdcPrice: onChain ? formatUnits(onChain.cusdcPrice, 6) : usdcPriceStr,
+        usdtPrice: onChain ? formatUnits(onChain.usdtPrice, 6) : usdcPriceStr,
+        ngnPrice,
+        stock: onChain ? Number(onChain.stock) : 0,
+        catalogOnly: !onChain,
+        comingSoon: false as const,
+        ...meta,
+        name: displayName,
+        desc: displayDesc,
+      };
+    };
+
+    const items: ReturnType<typeof buildRow>[] = [];
+    const seen = new Set<string>();
+
+    for (const catalog of INITIAL_COLLECTIBLES) {
+      if (isShopPerkHidden(catalog.perk)) continue;
+      const key = `${catalog.perk}:${catalog.strength}`;
+      seen.add(key);
+      items.push(buildRow(catalog.perk, catalog.strength, onChainShopByKey.get(key), catalog.usdcPrice, catalog.tycPrice));
+    }
+
+    for (const [key, onChain] of onChainShopByKey) {
+      if (seen.has(key) || isShopPerkHidden(onChain.perk)) continue;
+      items.push(buildRow(onChain.perk, onChain.strength, onChain));
+    }
+
+    return items.sort((a, b) => a.perk - b.perk || a.strength - b.strength);
+  }, [onChainShopByKey]);
 
   // Same as desktop: derive bundles from on-chain perk stock (API list alone is often empty).
   const computedBundles = useMemo(() => {
     const bundleMap = new Map<string, { perk: number; strength: number }>();
     for (const item of shopItems) {
+      if (item.stock <= 0) continue;
       const key = `${item.perk}:${item.strength}`;
       bundleMap.set(key, { perk: item.perk, strength: item.strength });
     }
@@ -542,20 +616,13 @@ export default function GameShopMobile() {
     }).catch(() => {});
   }, [computedBundles]);
 
-  // For admin bundle stocking we need tokenIds even when stock is 0
   const allCollectiblesByPerkStrength = useMemo(() => {
-    const map = new Map<string, { tokenId: bigint; perk: number; strength: number }>();
-    if (!shopInfoResults) return map;
-    for (let i = 0; i < shopInfoResults.length; i++) {
-      const r = shopInfoResults[i];
-      if (!r || r.status !== 'success') continue;
-      const [perk, strength] = r.result as [number, bigint, bigint, bigint, bigint];
-      const tokenId = shopTokenIds[i];
-      if (!tokenId) continue;
-      map.set(`${Number(perk)}:${Number(strength)}`, { tokenId, perk: Number(perk), strength: Number(strength) });
+    const map = new Map<string, { tokenId: bigint; perk: number; strength: number; stock: number }>();
+    for (const [key, row] of onChainShopByKey) {
+      map.set(key, { tokenId: row.tokenId, perk: row.perk, strength: row.strength, stock: Number(row.stock) });
     }
     return map;
-  }, [shopInfoResults, shopTokenIds]);
+  }, [onChainShopByKey]);
 
   const { data: rewardOwner } = useReadContract({
     address: contractAddress,
@@ -643,6 +710,10 @@ export default function GameShopMobile() {
 
   // Handlers
   const handleBuy = async (item: typeof shopItems[0]) => {
+    if (!item.tokenId || item.stock <= 0) {
+      toast.info(item.catalogOnly ? 'This perk is not stocked yet. Check back soon.' : 'Sold out — more stock coming soon.');
+      return;
+    }
     // Allow if wallet is connected OR smart wallet is available
     const hasPaymentMethod = (isConnected && address) || smartWalletAddress;
     if (!hasPaymentMethod) {
@@ -730,6 +801,10 @@ export default function GameShopMobile() {
   };
 
   const handlePayPerkWithNaira = async (item: (typeof shopItems)[0]) => {
+    if (!item.tokenId || item.stock <= 0) {
+      toast.info(item.catalogOnly ? 'This perk is not stocked yet.' : 'Sold out');
+      return;
+    }
     if (ngnLoadingTokenId != null) return;
     if (!nairaEligibility.ok) {
       toast.info(nairaBlockedMessage(nairaEligibility.reason));
@@ -893,6 +968,90 @@ export default function GameShopMobile() {
       resetBuyBundleFrom();
     } finally {
       setBundleBuyingName(null);
+    }
+  };
+
+  const handleStockMissingPerks = async () => {
+    if (!isConnected || !address) {
+      toast.error('Please connect your wallet');
+      return;
+    }
+    if (!isAdmin) {
+      toast.error('Admin only');
+      return;
+    }
+    if (!contractAddress || !publicClient) {
+      toast.error('Reward contract not configured on this chain');
+      return;
+    }
+    if (stockPerksProgress.active || stockShopHook.isPending) return;
+
+    const missing = INITIAL_COLLECTIBLES.filter((item) => {
+      if (isShopPerkHidden(item.perk)) return false;
+      return !allCollectiblesByPerkStrength.has(`${item.perk}:${item.strength}`);
+    });
+
+    if (missing.length === 0) {
+      toast.success('All catalog perks already exist on-chain. Use restock for sold-out rows.');
+      return;
+    }
+
+    setStockPerksProgress({ active: true, current: 0, total: missing.length });
+    try {
+      for (let i = 0; i < missing.length; i++) {
+        const item = missing[i]!;
+        setStockPerksProgress((p) => ({ ...p, current: i + 1 }));
+        const hash = await stockShopHook.stock(
+          50,
+          item.perk,
+          item.strength,
+          parseUnits(item.tycPrice, 18),
+          parseUnits(item.usdcPrice, 6)
+        );
+        if (hash) await publicClient.waitForTransactionReceipt({ hash });
+      }
+      toast.success(`Stocked ${missing.length} missing perk(s).`);
+    } catch (e: unknown) {
+      toastContractError(e, 'Failed to stock perks');
+    } finally {
+      setStockPerksProgress({ active: false, current: 0, total: 0 });
+    }
+  };
+
+  const handleRestockSoldOutPerks = async () => {
+    if (!isConnected || !address) {
+      toast.error('Please connect your wallet');
+      return;
+    }
+    if (!isAdmin) {
+      toast.error('Admin only');
+      return;
+    }
+    if (!publicClient) {
+      toast.error('Reward contract not configured on this chain');
+      return;
+    }
+    if (stockPerksProgress.active || restockCollectibleHook.isPending) return;
+
+    const soldOut = shopItems.filter((item) => item.tokenId && item.stock <= 0);
+    if (soldOut.length === 0) {
+      toast.info('No sold-out perks to restock.');
+      return;
+    }
+
+    setStockPerksProgress({ active: true, current: 0, total: soldOut.length });
+    try {
+      for (let i = 0; i < soldOut.length; i++) {
+        const item = soldOut[i]!;
+        setStockPerksProgress((p) => ({ ...p, current: i + 1 }));
+        const hash = await restockCollectibleHook.restock(item.tokenId!, BigInt(50));
+        if (hash) await publicClient.waitForTransactionReceipt({ hash });
+      }
+      toast.success(`Restocked ${soldOut.length} sold-out perk(s).`);
+    } catch (e: unknown) {
+      toastContractError(e, 'Failed to restock perks');
+    } finally {
+      setStockPerksProgress({ active: false, current: 0, total: 0 });
     }
   };
 
@@ -1190,6 +1349,40 @@ export default function GameShopMobile() {
           </div>
         )}
 
+        {shopTab === 'perks' && isAdmin && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+            <p className="text-[10px] uppercase tracking-wider text-amber-300/80 font-semibold">Shop admin</p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => void handleStockMissingPerks()}
+                disabled={stockPerksProgress.active || stockShopHook.isPending}
+                className="w-full py-2.5 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-100 text-xs font-semibold disabled:opacity-50"
+              >
+                {stockPerksProgress.active ? `Stocking perks ${stockPerksProgress.current}/${stockPerksProgress.total}…` : 'Stock missing perks (incl. Instant Cash T1/T2)'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRestockSoldOutPerks()}
+                disabled={stockPerksProgress.active || restockCollectibleHook.isPending}
+                className="w-full py-2.5 rounded-lg bg-amber-500/10 border border-amber-400/25 text-amber-200/90 text-xs font-semibold disabled:opacity-50"
+              >
+                Restock sold-out perks (+50 each)
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleStockAllBundles()}
+                disabled={stockAllBundlesProgress.active || stockBundleHook.isPending}
+                className="w-full py-2.5 rounded-lg bg-amber-500/10 border border-amber-400/25 text-amber-200/90 text-xs font-semibold disabled:opacity-50"
+              >
+                {stockAllBundlesProgress.active
+                  ? `Stocking bundles ${stockAllBundlesProgress.current}/${stockAllBundlesProgress.total}…`
+                  : 'Stock all bundles'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {shopTab === 'perks' && (
           <>
         {/* Section label */}
@@ -1207,15 +1400,16 @@ export default function GameShopMobile() {
             className="text-center py-20 rounded-2xl border border-[#003B3E]/60 bg-[#0E1415]/40"
           >
             <ShoppingBag size={56} className="mx-auto mb-6 text-slate-600" />
-            <p className="text-lg font-medium text-slate-400">Perk Shop is currently empty</p>
-            <p className="text-sm text-slate-500 mt-2">New perks will appear here when available. Play games or check back later!</p>
+            <p className="text-lg font-medium text-slate-400">No perks in catalog</p>
+            <p className="text-sm text-slate-500 mt-2">Check back later.</p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-2 gap-x-3 gap-y-5">
             {shopItems.map((item, index) => {
+              const soldOut = item.stock <= 0;
               return (
                 <motion.div
-                  key={item.tokenId.toString()}
+                  key={item.tokenId ? item.tokenId.toString() : `catalog-${item.perk}-${item.strength}`}
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -1238,7 +1432,7 @@ export default function GameShopMobile() {
                       </span>
                     )}
                     <span className="px-2 py-0.5 rounded-md bg-black/40 text-[10px] font-medium text-slate-300 border border-white/10">
-                      {item.stock} left
+                      {soldOut ? 'Sold out' : `${item.stock} left`}
                     </span>
                   </div>
 
@@ -1259,7 +1453,8 @@ export default function GameShopMobile() {
                       <button
                         onClick={() => (hasPaymentMethod ? handleBuy(item) : connectWallet())}
                         disabled={
-                          item.stock === 0 ||
+                          soldOut ||
+                          !item.tokenId ||
                           buyingPending ||
                           buyingConfirming ||
                           approvePending ||
@@ -1270,7 +1465,7 @@ export default function GameShopMobile() {
                           (hasPaymentMethod && activeStableBalance < Number(preferredStable.symbol === 'CUSDC' ? item.cusdcPrice : preferredStable.symbol === 'USDT' ? item.usdtPrice : item.usdcPrice))
                         }
                         className={`w-full py-3 rounded-xl font-semibold text-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F0FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0E1415]
-                          ${item.stock === 0
+                          ${soldOut || !item.tokenId
                             ? 'bg-slate-800/80 text-slate-500'
                             : !hasPaymentMethod
                             ? 'bg-gradient-to-r from-[#00F0FF]/30 to-[#0DD6E0]/25 text-[#00F0FF] border border-[#00F0FF]/40'
@@ -1282,8 +1477,8 @@ export default function GameShopMobile() {
                       >
                         {(buyingPending || buyingConfirming || buyFromPending || buyFromConfirming || smartWalletApprovePending || approvePending || approveConfirming) ? (
                           <Loader2 className="inline animate-spin mr-2" size={16} />
-                        ) : item.stock === 0 ? (
-                          'Sold Out'
+                        ) : soldOut || !item.tokenId ? (
+                          'Sold out'
                         ) : !hasPaymentMethod ? (
                           'Connect MiniPay wallet'
                         ) : activeStableBalance < Number(preferredStable.symbol === 'CUSDC' ? item.cusdcPrice : preferredStable.symbol === 'USDT' ? item.usdtPrice : item.usdcPrice) ? (
