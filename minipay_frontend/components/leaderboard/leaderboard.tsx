@@ -15,6 +15,7 @@ import {
   getBountyMonthConfig,
   isBountyMonthKey,
   parseLeaderboardApiResponse,
+  transformBountyLeaderboardRows,
   type BountyRow,
   type TimeScope,
 } from './leaderboard-types';
@@ -167,7 +168,14 @@ export default function Leaderboard() {
         timeScope === 'month' || timeScope === 'bounty'
           ? normalized.filter((row) => !row.username.includes('AI_'))
           : normalized;
-      setRows(filtered);
+
+      const displayConfig =
+        timeScope === 'bounty'
+          ? getBountyMonthConfig(BOUNTY_MONTH_KEY)
+          : timeScope === 'month'
+            ? getBountyMonthConfig(monthKey)
+            : null;
+      setRows(transformBountyLeaderboardRows(filtered, displayConfig));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load leaderboard';
       setError(message);

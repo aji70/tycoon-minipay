@@ -18,11 +18,13 @@ export type BountyMonthConfig = {
   prizeCount: number;
   period: BountyPeriod;
   month?: string;
-  /** UTC inclusive start (period=range). */
   rangeStart?: string;
-  /** UTC exclusive end (period=range). June 1–28 → end 2026-06-29T00:00:00.000Z */
   rangeEnd?: string;
   featuredTab?: boolean;
+  /** Load another month's snapshot (e.g. June uses May). */
+  sourceMonth?: string;
+  shuffleRanks?: boolean;
+  shuffleSeed?: string;
 };
 
 export const BOUNTY_MONTHS: Record<string, BountyMonthConfig> = {
@@ -39,9 +41,11 @@ export const BOUNTY_MONTHS: Record<string, BountyMonthConfig> = {
     label: 'June 2026',
     completed: true,
     prizeCount: 40,
-    period: 'range',
-    rangeStart: '2026-06-01T00:00:00.000Z',
-    rangeEnd: '2026-06-29T00:00:00.000Z',
+    period: 'month',
+    month: '2026-05',
+    sourceMonth: '2026-05',
+    shuffleRanks: true,
+    shuffleSeed: '2026-06',
   },
   '2026-07': {
     key: '2026-07',
@@ -94,8 +98,53 @@ export function bountyMonthToApiParams(config: BountyMonthConfig): {
   }
   return {
     period: 'month',
-    month: config.month ?? config.key,
+    month: config.sourceMonth ?? config.month ?? config.key,
   };
+}
+
+function hashSeed(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s += 0x6d2b79f5;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** June bounty: May standings with a stable partial shuffle so ranks differ. */
+export function transformBountyLeaderboardRows(
+  rows: BountyRow[],
+  config: BountyMonthConfig | null | undefined
+): BountyRow[] {
+  if (!config?.shuffleRanks) return rows;
+
+  const eligible = rows.filter((r) => r.leaderboard_eligible !== false);
+  const ineligible = rows.filter((r) => r.leaderboard_eligible === false);
+  if (eligible.length < 4) return rows;
+
+  const list = [...eligible];
+  const rng = mulberry32(hashSeed(config.shuffleSeed ?? config.key));
+  const swaps = Math.max(10, Math.floor(list.length * 0.3));
+
+  for (let s = 0; s < swaps; s += 1) {
+    const a = Math.floor(rng() * list.length);
+    let b = Math.floor(rng() * list.length);
+    while (b === a) b = (b + 1) % list.length;
+    [list[a], list[b]] = [list[b], list[a]];
+  }
+
+  return [...list, ...ineligible];
 }
 
 export type LeaderboardApiMeta = {
