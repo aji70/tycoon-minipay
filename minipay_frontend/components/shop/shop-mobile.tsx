@@ -722,21 +722,38 @@ export default function GameShopMobile() {
       const buyHash = await buy(item.tokenId, paymentToken);
       if (buyHash) await waitForTxConfirmed(publicClient, buyHash);
       if (buyHash) {
-        setSuccessBanner('Purchase successful!');
+        setSuccessBanner('Purchase successful! Perk sent to your connected wallet.');
         try {
-          await apiClient.post(
+          const bogoRes = await apiClient.post<{
+            success?: boolean;
+            data?: { bonus?: { applied?: boolean; error?: string; deliveryMethod?: string } };
+            message?: string;
+          }>(
             'auth/minipay/claim-perk-bogo',
             {
               txHash: buyHash,
               tokenId: item.tokenId.toString(),
               recipient: payerAddress,
+              address: payerAddress,
               chain: 'CELO',
               promoMode: MINIPAY_PROMO_MODE,
             },
             { timeout: 90000 }
           );
-        } catch {
-          // Bonus is best-effort; purchase already succeeded on-chain.
+          const bonus = bogoRes?.data?.data?.bonus;
+          if (bonus?.applied) {
+            setSuccessBanner('Purchase successful! Bonus perk delivered too.');
+          } else if (bonus?.error) {
+            pageToastInfo(`Paid — bonus copy pending: ${bonus.error}`);
+          }
+        } catch (bogoErr) {
+          const msg =
+            bogoErr instanceof ApiError
+              ? bogoErr.message
+              : bogoErr instanceof Error
+                ? bogoErr.message
+                : 'Bonus delivery failed';
+          pageToastInfo(`Paid — bonus perk not delivered yet: ${msg}`);
         }
       }
       void refetchStableAllowance();
