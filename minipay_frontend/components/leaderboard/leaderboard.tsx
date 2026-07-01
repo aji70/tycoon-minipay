@@ -67,7 +67,9 @@ function utcYearMonthOptions(count: number): { value: string; label: string }[] 
 }
 
 function buildInfoLabel(chainParam: string, timeScope: TimeScope, monthKey: string): string {
-  if (timeScope === 'all') return `${chainParam} · All-time`;
+  if (timeScope === 'all') {
+    return `${chainParam} · All-time · Daily snapshot · Fair play (UTC)`;
+  }
 
   const config =
     timeScope === 'bounty' ? getBountyMonthConfig(BOUNTY_MONTH_KEY) : getBountyMonthConfig(monthKey);
@@ -164,10 +166,7 @@ export default function Leaderboard() {
       const res = await apiClient.get('/users/leaderboard', params);
       const { rows: normalized, meta } = parseLeaderboardApiResponse(res);
       setLastUpdatedAt(meta.lastUpdatedAt);
-      const filtered =
-        timeScope === 'month' || timeScope === 'bounty'
-          ? normalized.filter((row) => !row.username.includes('AI_'))
-          : normalized;
+      const filtered = normalized.filter((row) => !row.username.includes('AI_'));
 
       const displayConfig =
         timeScope === 'bounty'
