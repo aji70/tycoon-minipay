@@ -722,25 +722,16 @@ export default function GameShopMobile() {
       const buyHash = await buy(item.tokenId, paymentToken);
       if (buyHash) await waitForTxConfirmed(publicClient, buyHash);
       if (buyHash) {
-        let bonusApplied = false;
-        let bonusFailed = false;
-        try {
-          const promoRes = await apiClient.post<{ success?: boolean; message?: string }>('auth/minipay/claim-perk-bogo', {
+        setSuccessBanner('Purchase successful!');
+        void apiClient
+          .post('auth/minipay/claim-perk-bogo', {
             txHash: buyHash,
             tokenId: item.tokenId.toString(),
             recipient: payerAddress,
             chain: 'CELO',
             promoMode: MINIPAY_PROMO_MODE,
-          });
-          bonusApplied = !!promoRes?.data?.data?.bonus?.applied;
-          bonusFailed = !bonusApplied;
-        } catch (_) {
-          bonusFailed = true;
-        }
-        setSuccessBanner(bonusApplied ? 'Purchase successful! Bonus perk added.' : 'Purchase successful!');
-        if (bonusFailed) {
-          pageToastError('Perk bought, but bonus copy was not added.');
-        }
+          })
+          .catch(() => {});
       }
       void refetchStableAllowance();
     } catch (err: unknown) {
