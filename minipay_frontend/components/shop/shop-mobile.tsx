@@ -679,6 +679,8 @@ export default function GameShopMobile() {
   }, [voucherInfoResults, vouchersWithOwner]);
 
   // Handlers
+  const MINIPAY_PROMO_MODE = 'minipay_bogo' as const;
+
   const handleBuy = async (item: typeof shopItems[0]) => {
     if (!item.tokenId || item.stock <= 0) {
       pageToastInfo(item.catalogOnly ? 'This perk is not stocked yet. Check back soon.' : 'Sold out — more stock coming soon.');
@@ -727,11 +729,13 @@ export default function GameShopMobile() {
             useUsdc: true,
             maxPrice: priceWei.toString(),
             pin,
+            promoMode: MINIPAY_PROMO_MODE,
           });
           if (!res?.success && !res?.data?.success) {
             throw new Error(res?.data?.message || 'Purchase failed');
           }
-          toast.success('Purchase successful!');
+          const bonusApplied = !!res?.data?.data?.bonus?.applied;
+          toast.success(bonusApplied ? 'Purchase successful! Bonus perk added.' : 'Purchase successful!');
         } else {
           await ensureErc20Allowance({
             publicClient,
@@ -744,6 +748,20 @@ export default function GameShopMobile() {
           });
           const buyHash = await buyFrom(smartWalletAddress, item.tokenId, paymentToken);
           if (buyHash) await waitForTxConfirmed(publicClient, buyHash);
+          if (buyHash) {
+            let bonusApplied = false;
+            try {
+              const promoRes = await apiClient.post<{ success?: boolean; message?: string }>('auth/minipay/claim-perk-bogo', {
+                txHash: buyHash,
+                tokenId: item.tokenId.toString(),
+                recipient: smartWalletAddress,
+                chain: 'CELO',
+                promoMode: MINIPAY_PROMO_MODE,
+              });
+              bonusApplied = !!promoRes?.data?.data?.bonus?.applied;
+            } catch (_) {}
+            toast.success(bonusApplied ? 'Purchase successful! Bonus perk added.' : 'Purchase successful!');
+          }
         }
       } else {
         if (!payerAddress) {
@@ -777,6 +795,20 @@ export default function GameShopMobile() {
         }
         const buyHash = await buy(item.tokenId, paymentToken);
         if (buyHash) await waitForTxConfirmed(publicClient, buyHash);
+        if (buyHash && payerAddress) {
+          let bonusApplied = false;
+          try {
+            const promoRes = await apiClient.post<{ success?: boolean; message?: string }>('auth/minipay/claim-perk-bogo', {
+              txHash: buyHash,
+              tokenId: item.tokenId.toString(),
+              recipient: payerAddress,
+              chain: 'CELO',
+              promoMode: MINIPAY_PROMO_MODE,
+            });
+            bonusApplied = !!promoRes?.data?.data?.bonus?.applied;
+          } catch (_) {}
+          toast.success(bonusApplied ? 'Purchase successful! Bonus perk added.' : 'Purchase successful!');
+        }
         void refetchStableAllowance();
       }
     } catch (err: unknown) {
@@ -807,6 +839,7 @@ export default function GameShopMobile() {
           token_id: tokenIdStr,
           amount_ngn: amountNgn,
           callback_url: callbackUrl,
+          promoMode: MINIPAY_PROMO_MODE,
           ...(address ? { address, chain: 'CELO' } : {}),
         }
       );
