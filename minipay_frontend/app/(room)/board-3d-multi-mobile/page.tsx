@@ -14,6 +14,7 @@ import {
   getPerkPreBurnBlockMessage,
   perkApiSucceeded,
 } from "@/lib/perks/perkActivationErrors";
+import { PERK_DISCOUNT_TIERS, PERK_REFUND_TIERS } from "@/lib/perks/perkTiers";
 import { reportAiAction } from "@/lib/agentFeedback";
 import { calculateAiFavorability, TRADE_ACCEPT_THRESHOLD } from "@/utils/gameUtils";
 import { useAgentSettings, BUY_SCORE_THRESHOLD, BUY_CASH_RESERVE, BUILD_MIN_BALANCE, BUILD_AFTER_RESERVE } from "@/hooks/useAgentSettings";
@@ -984,7 +985,7 @@ function Board3DMobilePageContent() {
 
   const handleRollForLive = useCallback(() => {
     if (rollingDice || !game || !me) return;
-    const value = getDiceValues();
+    const value = getDiceValues(me.pending_exact_roll);
     pendingRollRef.current = value;
     rollingForPlayerIdRef.current = me.user_id;
     setRollingDice({ die1: value.die1, die2: value.die2 });
@@ -1034,6 +1035,7 @@ function Board3DMobilePageContent() {
         isMyTurn,
         playerCanRoll,
         inJail: meInJail,
+        rolls: me?.rolls,
       });
       if (blockMsg) {
         gameBoardToastError(blockMsg, { severity: "warning" });
@@ -1058,21 +1060,28 @@ function Board3DMobilePageContent() {
         let success = false;
         let failureMessage: string | null = null;
         switch (perk) {
-          case 1:
-            if (playerCanRoll) {
+          case 1: {
+            const res = await apiClient.post<{ success?: boolean; message?: string }>("/perks/use-extra-turn", {
+              game_id: game.id,
+              from_collectible: true,
+              ...(me?.address ? { address: me.address } : {}),
+            });
+            success = perkApiSucceeded(res);
+            if (success) {
+              setTurnEndScheduled(false);
+              setBuyPrompted(false);
+              setLandedPositionForBuy(null);
+              landedPositionThisTurnRef.current = null;
+              hasScheduledTurnEndRef.current = false;
+              pendingBuyPromptRef.current = false;
               toast.success("Extra Turn! Roll again.", { id: toastId });
+              await refetchGame();
               handleRollForLive();
-              success = true;
             } else {
-              failureMessage =
-                getPerkPreBurnBlockMessage({
-                  perkId: 1,
-                  isMyTurn,
-                  playerCanRoll: false,
-                  inJail: meInJail,
-                }) ?? getPerkFailureFallback(1);
+              failureMessage = getPerkApiMessage(res, getPerkFailureFallback(1));
             }
             break;
+          }
           case 2: {
             const res = await apiClient.post<{ success?: boolean; message?: string }>("/perks/use-jail-free", {
               game_id: game.id,
@@ -1089,8 +1098,6 @@ function Board3DMobilePageContent() {
           case 3:
           case 4:
           case 7:
-          case 8:
-          case 9:
           case 11:
           case 12:
           case 13:
@@ -1105,6 +1112,44 @@ function Board3DMobilePageContent() {
               toast.success(`${name} activated for next use!`, { id: toastId });
             } else {
               failureMessage = getPerkApiMessage(res, getPerkFailureFallback(perk));
+            }
+            break;
+          }
+          case 8: {
+            const discount = PERK_DISCOUNT_TIERS[Math.min(strength, PERK_DISCOUNT_TIERS.length - 1)];
+            if (discount > 0) {
+              const res = await apiClient.post<{ success?: boolean; message?: string }>("/perks/apply-cash", {
+                game_id: game.id,
+                perk_id: 8,
+                amount: discount,
+                from_collectible: true,
+                ...(me?.address ? { address: me.address } : {}),
+              });
+              success = perkApiSucceeded(res);
+              if (success) {
+                toast.success(`+$${discount} Property Discount!`, { id: toastId });
+              } else {
+                failureMessage = getPerkApiMessage(res, getPerkFailureFallback(8));
+              }
+            }
+            break;
+          }
+          case 9: {
+            const refund = PERK_REFUND_TIERS[Math.min(strength, PERK_REFUND_TIERS.length - 1)];
+            if (refund > 0) {
+              const res = await apiClient.post<{ success?: boolean; message?: string }>("/perks/apply-cash", {
+                game_id: game.id,
+                perk_id: 9,
+                amount: refund,
+                from_collectible: true,
+                ...(me?.address ? { address: me.address } : {}),
+              });
+              success = perkApiSucceeded(res);
+              if (success) {
+                toast.success(`+$${refund} Tax Refund!`, { id: toastId });
+              } else {
+                failureMessage = getPerkApiMessage(res, getPerkFailureFallback(9));
+              }
             }
             break;
           }

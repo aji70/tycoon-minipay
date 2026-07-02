@@ -44,6 +44,7 @@ export type PerkPreBurnContext = {
   isMyTurn: boolean;
   playerCanRoll?: boolean;
   inJail?: boolean;
+  rolls?: number;
 };
 
 const PERK_FAILURE_FALLBACK: Record<number, string> = {
@@ -72,8 +73,8 @@ export function getPerkPreBurnBlockMessage(ctx: PerkPreBurnContext): string | nu
   if (!ctx.isMyTurn) return "Wait for your turn!";
   switch (ctx.perkId) {
     case 1:
-      if (ctx.playerCanRoll === false) {
-        return "Extra Turn can only be used when you can still roll this turn.";
+      if (Number(ctx.rolls ?? 0) < 1) {
+        return "Extra Turn can only be used after you've rolled once this turn.";
       }
       break;
     case 2:

@@ -42,6 +42,7 @@ import {
   getPerkPreBurnBlockMessage,
   perkApiSucceeded,
 } from "@/lib/perks/perkActivationErrors";
+import { PERK_DISCOUNT_TIERS, PERK_REFUND_TIERS } from "@/lib/perks/perkTiers";
 import { ApiResponse } from "@/types/api";
 import { JAIL_POSITION } from "@/utils/constants/monopoly";
 import {
@@ -399,6 +400,7 @@ export default function CollectibleInventoryBar({
       isMyTurn,
       playerCanRoll,
       inJail: playerInJail,
+      rolls: currentPlayer?.rolls,
     });
     if (blockMsg) {
       toast.error(blockMsg);
@@ -435,21 +437,17 @@ export default function CollectibleInventoryBar({
 
         switch (perkId) {
           case 1: {
-            const canRoll =
-              playerCanRoll ??
-              (isMyTurn && (currentPlayer?.balance ?? 0) > 0 && !playerInJail);
-            if (canRoll) {
+            const res = await apiClient.post<{ success?: boolean; message?: string }>("/perks/use-extra-turn", {
+              game_id: game.id,
+              from_collectible: true,
+            });
+            success = perkApiSucceeded(res);
+            if (success) {
               toast.success("Extra Turn activated! Roll again!", { id: toastId });
+              await refreshGameStateAfterPerk(onPerkApplied);
               setTimeout(() => ROLL_DICE(), 800);
-              success = true;
             } else {
-              failureMessage =
-                getPerkPreBurnBlockMessage({
-                  perkId: 1,
-                  isMyTurn,
-                  playerCanRoll: false,
-                  inJail: playerInJail,
-                }) ?? getPerkFailureFallback(1);
+              failureMessage = getPerkApiMessage(res, getPerkFailureFallback(1));
             }
             break;
           }
@@ -485,8 +483,6 @@ export default function CollectibleInventoryBar({
           case 3:
           case 4:
           case 7:
-          case 8:
-          case 9:
           case 11:
           case 12:
           case 13:
@@ -500,6 +496,42 @@ export default function CollectibleInventoryBar({
               toast.success(perkId === 13 ? "Lucky 7! Next roll will be 7." : `${name} activated!`, { id: toastId });
             } else {
               failureMessage = getPerkApiMessage(res, getPerkFailureFallback(perkId));
+            }
+            break;
+          }
+          case 8: {
+            const discount = PERK_DISCOUNT_TIERS[Math.min(strength, PERK_DISCOUNT_TIERS.length - 1)];
+            if (discount > 0) {
+              const res = await apiClient.post<{ success?: boolean; message?: string }>("/perks/apply-cash", {
+                game_id: game.id,
+                perk_id: 8,
+                amount: discount,
+                from_collectible: true,
+              });
+              success = perkApiSucceeded(res);
+              if (success) {
+                toast.success(`+$${discount} Property Discount!`, { id: toastId });
+              } else {
+                failureMessage = getPerkApiMessage(res, getPerkFailureFallback(8));
+              }
+            }
+            break;
+          }
+          case 9: {
+            const refund = PERK_REFUND_TIERS[Math.min(strength, PERK_REFUND_TIERS.length - 1)];
+            if (refund > 0) {
+              const res = await apiClient.post<{ success?: boolean; message?: string }>("/perks/apply-cash", {
+                game_id: game.id,
+                perk_id: 9,
+                amount: refund,
+                from_collectible: true,
+              });
+              success = perkApiSucceeded(res);
+              if (success) {
+                toast.success(`+$${refund} Tax Refund!`, { id: toastId });
+              } else {
+                failureMessage = getPerkApiMessage(res, getPerkFailureFallback(9));
+              }
             }
             break;
           }
