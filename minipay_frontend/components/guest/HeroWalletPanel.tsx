@@ -31,6 +31,7 @@ import { getGuestUserPlayAddress } from "@/lib/minipayGuestFlow";
 import { User as UserType } from "@/lib/types/users";
 import { ApiResponse } from "@/types/api";
 import { useUserLevel } from "@/hooks/useUserLevel";
+import { canAccessMultiplayerPreview } from "@/lib/featureAccess";
 function chainIdToBackendChain(chainId: number): string {
   return "CELO";
 }
@@ -253,9 +254,7 @@ const HeroWalletPanel: React.FC<HeroWalletPanelProps> = ({ onReturningPlayerChan
   }, [guestUser, user, localUsername, fetchedUsername, inputUsername]);
 
   /** Soft-launch: Multiplayer / Join Game only for these tester usernames. */
-  const canSeeMultiplayer = ["ajisabo", "jaibois"].includes(
-    (displayUsername ?? "").trim().toLowerCase()
-  );
+  const canSeeMultiplayer = canAccessMultiplayerPreview(displayUsername);
 
   const { levelInfo } = useUserLevel({
     address: guestUser && !address ? undefined : levelContractLookupAddress,

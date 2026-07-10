@@ -36,6 +36,8 @@ import { shouldUseBackendGuestGameFlow, ensureMiniPayWalletReady } from "@/lib/m
 import { Address, parseUnits } from "viem";
 import { getContractErrorMessage } from "@/lib/utils/contractErrors";
 import { usePreventDoubleSubmit } from "@/hooks/usePreventDoubleSubmit";
+import WhoIsOnlineControl from "@/components/shared/WhoIsOnlineControl";
+import { canAccessMultiplayerPreview } from "@/lib/featureAccess";
 
 interface GameCreateResponse {
   data?: {
@@ -181,9 +183,12 @@ export default function CreateGameMobile({
   const { address } = useAccount();
   const wagmiChainId = useChainId();
   const guestAuth = useGuestAuthOptional();
-  const isGuest = shouldUseBackendGuestGameFlow(guestAuth?.guestUser ?? null, address, wagmiChainId);
+  const guestUser = guestAuth?.guestUser ?? null;
+  const isGuest = shouldUseBackendGuestGameFlow(guestUser, address, wagmiChainId);
 
   const { data: username } = useGetUsername(address);
+  const headerUsername = guestUser?.username ?? (typeof username === "string" ? username : null);
+  const showOnlineInHeader = canAccessMultiplayerPreview(headerUsername);
   const { data: isUserRegistered } = useIsRegistered(address);
 
   const isMiniPay = MINIPAY_CHAIN_IDS.includes(wagmiChainId);
@@ -501,25 +506,33 @@ export default function CreateGameMobile({
 
       {/* Persistent page header */}
       <header className="sticky top-0 z-40 border-b border-[#00D4FF]/20 bg-[#0A1628]/95 pt-[env(safe-area-inset-top)] backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-md items-center justify-between px-3">
+        <div className="relative mx-auto flex h-14 max-w-md items-center justify-between px-3">
           <button
             type="button"
             onClick={() => router.push("/")}
             aria-label="Close"
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#00D4FF]/25 text-[#00D4FF] transition hover:border-[#00D4FF]/50 hover:bg-[#00D4FF]/10"
+            className="relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl border border-[#00D4FF]/25 text-[#00D4FF] transition hover:border-[#00D4FF]/50 hover:bg-[#00D4FF]/10"
           >
             <X className="h-5 w-5" />
           </button>
-          <h1 className="font-orbitron text-base font-bold uppercase tracking-[0.2em] text-white">
-            <span className="bg-gradient-to-r from-[#00D4FF] to-[#6ec8ff] bg-clip-text text-transparent">
-              Tycoon
-            </span>
-          </h1>
+          <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-[1] flex items-center justify-center">
+            <div className="pointer-events-auto">
+              {showOnlineInHeader ? (
+                <WhoIsOnlineControl username={headerUsername} />
+              ) : (
+                <h1 className="font-orbitron text-base font-bold uppercase tracking-[0.2em] text-white">
+                  <span className="bg-gradient-to-r from-[#00D4FF] to-[#6ec8ff] bg-clip-text text-transparent">
+                    Tycoon
+                  </span>
+                </h1>
+              )}
+            </div>
+          </div>
           <a
             href={SUPPORT_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-[#00D4FF]/25 px-3 font-dmSans text-xs font-medium text-[#9ad8e4] transition hover:border-[#00D4FF]/50 hover:text-[#00D4FF]"
+            className="relative z-[1] inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-[#00D4FF]/25 px-3 font-dmSans text-xs font-medium text-[#9ad8e4] transition hover:border-[#00D4FF]/50 hover:text-[#00D4FF]"
           >
             <LifeBuoy className="h-4 w-4" />
             Support
