@@ -3571,7 +3571,13 @@ function Board3DMobileContent() {
         />
       )}
 
-      <Toaster position="top-center" />
+      <Toaster
+        position="top-center"
+        containerStyle={{
+          zIndex: 2147483647,
+          top: "max(3.25rem, calc(env(safe-area-inset-top) + 2.75rem))",
+        }}
+      />
     </div>
   );
 }
