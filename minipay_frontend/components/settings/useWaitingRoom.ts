@@ -145,6 +145,7 @@ export function useWaitingRoom(options: UseWaitingRoomOptions = {}) {
 
   const mountedRef = useRef(true);
   const refetchGameRef = useRef<{ fn: (() => Promise<void>) | null }>({ fn: null });
+  const lobbyClosedHandledRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -292,6 +293,7 @@ export function useWaitingRoom(options: UseWaitingRoomOptions = {}) {
     }
 
     let pollTimer: number | null = null;
+    lobbyClosedHandledRef.current = false;
 
     const fetchOnce = async () => {
       setError(null);
@@ -310,6 +312,16 @@ export function useWaitingRoom(options: UseWaitingRoomOptions = {}) {
 
         if (gameData.status === "RUNNING") {
           router.push(`${getRedirectBoardUrl()}?gameCode=${encodeURIComponent(gameCode)}`);
+          return;
+        }
+
+        const closed = String(gameData.status || "").toUpperCase();
+        if (closed === "CANCELLED" || closed === "FINISHED" || closed === "COMPLETED") {
+          if (!lobbyClosedHandledRef.current) {
+            lobbyClosedHandledRef.current = true;
+            toast.info("Challenge declined — returning home", { autoClose: 3500 });
+            router.replace("/");
+          }
           return;
         }
 
@@ -374,14 +386,34 @@ export function useWaitingRoom(options: UseWaitingRoomOptions = {}) {
     const onPlayerJoined = () => {
       refetchGameRef.current.fn?.();
     };
+    const onGameEnded = (data: { gameCode?: string; reason?: string }) => {
+      if (data?.gameCode && data.gameCode !== gameCode) return;
+      const reason = String(data?.reason || "").toLowerCase();
+      if (reason === "rejected" || reason === "cancelled" || reason === "expired") {
+        if (!lobbyClosedHandledRef.current) {
+          lobbyClosedHandledRef.current = true;
+          toast.info(
+            reason === "rejected"
+              ? "Challenge declined — returning home"
+              : "Lobby cancelled — returning home",
+            { autoClose: 3500 }
+          );
+          router.replace("/");
+        }
+        return;
+      }
+      refetchGameRef.current.fn?.();
+    };
     socketService.onGameUpdate(onGameUpdate);
     socketService.onPlayerJoined(onPlayerJoined);
+    socketService.onGameEnded(onGameEnded);
     return () => {
       socketService.removeListener("game-update", onGameUpdate);
       socketService.removeListener("player-joined", onPlayerJoined);
+      socketService.removeListener("game-ended", onGameEnded);
       socketService.leaveGameRoom(gameCode);
     };
-  }, [gameCode]);
+  }, [gameCode, router]);
 
   const playersJoined =
     contractGame?.joinedPlayers
