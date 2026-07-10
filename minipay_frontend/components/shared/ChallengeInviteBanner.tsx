@@ -5,7 +5,14 @@ import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Swords, X } from "lucide-react";
-import { useAccount } from "wagmi";
+import {
+  useAccount,
+  useChainId,
+  usePublicClient,
+  useWriteContract,
+  useReadContract,
+} from "wagmi";
+import { isAddress, type Address } from "viem";
 import { useGuestAuthOptional } from "@/context/GuestAuthContext";
 import {
   useMessageNotifications,
@@ -15,17 +22,47 @@ import { apiClient } from "@/lib/api";
 import { canAccessChallenges } from "@/lib/featureAccess";
 import { getGuestUserPlayAddress } from "@/lib/minipayGuestFlow";
 import { resolvePresenceFromPath } from "@/lib/presenceStatus";
+import { joinSignedChallengeGame } from "@/lib/joinSignedChallengeGame";
+import { getContractErrorMessage } from "@/lib/utils/contractErrors";
+import {
+  useGetUsername,
+  useIsRegistered,
+  useApprove,
+  useStakeTokenAddress,
+} from "@/context/ContractProvider";
+import { TYCOON_CONTRACT_ADDRESSES } from "@/constants/contracts";
+import Erc20Abi from "@/context/abi/ERC20abi.json";
 import { toast } from "react-toastify";
 
 /**
  * Full-width challenge invite banner. Closing / dismissing rejects the challenge
  * and cancels the lobby game. Hidden while the local player is on the board.
+ * Staked accepts require wallet approve + joinGame signature.
  */
 export default function ChallengeInviteBanner({ username }: { username?: string | null }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
+  const safeAddress = address && isAddress(address) ? address : undefined;
+  const { data: onChainUsername } = useGetUsername(safeAddress);
+  const { data: isUserRegistered } = useIsRegistered(safeAddress);
+  const { stakeTokenAddress } = useStakeTokenAddress();
+  const { approve: approveUSDC } = useApprove();
+  const contractAddress = TYCOON_CONTRACT_ADDRESSES[
+    chainId as keyof typeof TYCOON_CONTRACT_ADDRESSES
+  ] as Address | undefined;
+  const { data: stakeAllowance, refetch: refetchAllowance } = useReadContract({
+    address: stakeTokenAddress,
+    abi: Erc20Abi,
+    functionName: "allowance",
+    args: safeAddress && contractAddress ? [safeAddress, contractAddress] : undefined,
+    query: { enabled: !!safeAddress && !!stakeTokenAddress && !!contractAddress },
+  });
+
   const guestAuth = useGuestAuthOptional();
   const guestUser = guestAuth?.guestUser ?? null;
   const playAddress =
@@ -48,7 +85,6 @@ export default function ChallengeInviteBanner({ username }: { username?: string 
     setMounted(true);
   }, []);
 
-  // Players on the board cannot receive challenges — auto-decline any that slip through.
   useEffect(() => {
     if (!onBoard || !canChallenge || challengeItems.length === 0) return;
     const addressPayload = playAddress ? { address: playAddress, chain: "CELO" } : {};
@@ -59,7 +95,7 @@ export default function ChallengeInviteBanner({ username }: { username?: string 
         try {
           await apiClient.post(`/challenges/${c.id}/reject`, addressPayload);
         } catch {
-          // ignore — still drop locally
+          // ignore
         } finally {
           dismissChallenge(c.id);
           rejectingRef.current.delete(c.id);
@@ -88,7 +124,6 @@ export default function ChallengeInviteBanner({ username }: { username?: string 
         (err as Error)?.message ||
         "Could not decline challenge";
       setError(msg);
-      // Still remove from UI so close always ends the invite locally; retry via poll if needed
       dismissChallenge(challenge.id);
     } finally {
       rejectingRef.current.delete(challenge.id);
@@ -100,26 +135,91 @@ export default function ChallengeInviteBanner({ username }: { username?: string 
     if (busy) return;
     setBusy("accept");
     setError(null);
+    const stake = Math.max(0, Number(challenge.stake) || 0);
+    const toastId = toast.loading(
+      stake > 0 ? "Approve USDT & sign join…" : "Sign joinGame in your wallet…"
+    );
+
     try {
+      if (!safeAddress) {
+        throw new Error("Connect your wallet to accept a challenge");
+      }
+      if (!isUserRegistered) {
+        throw new Error("Register on-chain on the home page before joining");
+      }
+      const joinUsername =
+        (typeof onChainUsername === "string" && onChainUsername.trim()) ||
+        guestUser?.username?.trim() ||
+        username?.trim() ||
+        "";
+      if (!joinUsername) {
+        throw new Error("Set a username before joining");
+      }
+      if (!publicClient) {
+        throw new Error("Network unavailable");
+      }
+
+      toast.update(toastId, {
+        render: stake > 0 ? "Approve USDT & sign join…" : "Sign joinGame in your wallet…",
+        isLoading: true,
+      });
+      const joined = await joinSignedChallengeGame({
+        address: safeAddress,
+        username: joinUsername,
+        chainId,
+        publicClient,
+        writeContractAsync: writeContractAsync as never,
+        gameCode: challenge.gameCode,
+        stake,
+        symbol: "car",
+        stakeTokenAddress: stakeTokenAddress ?? null,
+        approveUsdc: async (token, spender, amount) => {
+          toast.update(toastId, { render: "Approve USDT…", isLoading: true });
+          await approveUSDC(token, spender, amount);
+        },
+        readAllowance: async () => {
+          const r = await refetchAllowance();
+          if (r.data != null) return BigInt(r.data.toString());
+          if (stakeAllowance != null) return BigInt(stakeAllowance.toString());
+          return 0n;
+        },
+      });
+
+      toast.update(toastId, { render: "Saving accept…", isLoading: true });
       const res = await apiClient.post(
         `/challenges/${challenge.id}/accept`,
-        playAddress ? { address: playAddress, chain: "CELO" } : {},
+        {
+          ...(playAddress ? { address: playAddress, chain: "CELO" } : {}),
+          playerSignedJoin: true,
+          symbol: joined.symbol,
+        },
         { timeout: 120000 }
       );
-      const body = res?.data as { data?: { gameCode?: string } } | undefined;
+      const body = res?.data as { data?: { gameCode?: string }; success?: boolean; message?: string } | undefined;
+      if (body && body.success === false) {
+        throw new Error(body.message || "Could not accept challenge");
+      }
       const code = body?.data?.gameCode || challenge.gameCode || "";
       dismissChallenge(challenge.id);
+      toast.update(toastId, {
+        render: "Challenge accepted",
+        type: "success",
+        isLoading: false,
+        autoClose: 2500,
+      });
       if (code) {
         router.push(`/game-waiting-3d?gameCode=${encodeURIComponent(code)}`);
       }
       void refreshChallenges();
     } catch (err: unknown) {
       const msg =
+        getContractErrorMessage(err, "") ||
         (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data
           ?.message ||
         (err as Error)?.message ||
         "Could not accept challenge";
       setError(msg);
+      toast.update(toastId, { render: msg, type: "error", isLoading: false, autoClose: 8000 });
     } finally {
       setBusy(null);
     }
@@ -155,8 +255,8 @@ export default function ChallengeInviteBanner({ username }: { username?: string 
                 </p>
                 <p className="mt-0.5 font-dmSans text-xs text-[#8aa4b0]">
                   {active.stake != null && Number(active.stake) > 0
-                    ? `${Number(active.stake)} USDT stake · lobby ${active.gameCode}`
-                    : `Free match · lobby ${active.gameCode}`}
+                    ? `${Number(active.stake)} USDT stake · you'll sign to join · lobby ${active.gameCode}`
+                    : `Free match · you'll sign to join · lobby ${active.gameCode}`}
                 </p>
                 {error ? <p className="mt-1 font-dmSans text-xs text-rose-300">{error}</p> : null}
               </div>
@@ -189,7 +289,7 @@ export default function ChallengeInviteBanner({ username }: { username?: string 
                 onClick={() => void accept(active)}
                 className="flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-emerald-400/50 bg-emerald-500/25 font-orbitron text-xs font-bold uppercase tracking-wider text-emerald-100 disabled:opacity-50"
               >
-                {busy === "accept" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Accept"}
+                {busy === "accept" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign & Accept"}
               </button>
             </div>
           </div>
