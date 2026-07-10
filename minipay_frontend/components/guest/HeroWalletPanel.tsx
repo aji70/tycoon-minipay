@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
-import { Gamepad2 } from "lucide-react";
+import { Dices, Gamepad2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAccount, useChainId, useConnect, useSignMessage, usePublicClient, useSwitchChain } from "wagmi";
@@ -251,6 +251,9 @@ const HeroWalletPanel: React.FC<HeroWalletPanelProps> = ({ onReturningPlayerChan
       "Player"
     );
   }, [guestUser, user, localUsername, fetchedUsername, inputUsername]);
+
+  /** Soft-launch: Multiplayer / Join Room only for this tester username. */
+  const canSeeMultiplayer = (displayUsername ?? "").trim().toLowerCase() === "ajisabo";
 
   const { levelInfo } = useUserLevel({
     address: guestUser && !address ? undefined : levelContractLookupAddress,
@@ -791,6 +794,68 @@ const HeroWalletPanel: React.FC<HeroWalletPanelProps> = ({ onReturningPlayerChan
                   Challenge AI
                 </span>
               </motion.button>
+
+              {canSeeMultiplayer && (
+                <div className="flex flex-wrap justify-center items-center gap-2 w-full">
+                  <motion.button
+                    type="button"
+                    onClick={() => router.push("/game-settings-3d")}
+                    className="relative group w-[130px] h-[40px] bg-transparent border-none p-0 overflow-hidden cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <svg
+                      width="130"
+                      height="40"
+                      viewBox="0 0 130 40"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="absolute top-0 left-0 w-full h-full"
+                    >
+                      <path
+                        d="M6 1H124C128.373 1 130.996 5.85486 128.601 9.5127L110.167 37.5127C109.151 39.0646 107.42 40 105.565 40H6C2.96244 40 0.5 37.5376 0.5 34.5V6.5C0.5 3.46243 2.96243 1 6 1Z"
+                        fill="#003B3E"
+                        stroke="#003B3E"
+                        strokeWidth={1}
+                        className="group-hover:stroke-[#00F0FF] transition-all duration-300"
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[#00F0FF] capitalize text-[12px] font-dmSans font-medium z-2">
+                      <Gamepad2 className="mr-1.5 w-[16px] h-[16px]" />
+                      Multiplayer
+                    </span>
+                  </motion.button>
+
+                  <motion.button
+                    type="button"
+                    onClick={() => router.push("/join-room-3d")}
+                    className="relative group w-[130px] h-[40px] bg-transparent border-none p-0 overflow-hidden cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <svg
+                      width="130"
+                      height="40"
+                      viewBox="0 0 130 40"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="absolute top-0 left-0 w-full h-full"
+                    >
+                      <path
+                        d="M6 1H124C128.373 1 130.996 5.85486 128.601 9.5127L110.167 37.5127C109.151 39.0646 107.42 40 105.565 40H6C2.96244 40 0.5 37.5376 0.5 34.5V6.5C0.5 3.46243 2.96243 1 6 1Z"
+                        fill="#003B3E"
+                        stroke="#003B3E"
+                        strokeWidth={1}
+                        className="group-hover:stroke-[#00F0FF] transition-all duration-300"
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[#00F0FF] capitalize text-[12px] font-dmSans font-medium z-2">
+                      <Dices className="mr-1.5 w-[16px] h-[16px]" />
+                      Join Game
+                    </span>
+                  </motion.button>
+                </div>
+              )}
 
             </motion.div>
           ) : null}
