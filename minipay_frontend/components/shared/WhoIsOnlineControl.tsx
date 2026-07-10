@@ -198,6 +198,7 @@ export default function WhoIsOnlineControl({
           opponentId: opponentUserId,
           is_minipay: true,
           chain: "CELO",
+          ...(presenceAddress ? { address: presenceAddress } : {}),
         },
         { timeout: 120000 }
       );

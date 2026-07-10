@@ -14,6 +14,7 @@ import {
 import OnlineDmPanel from "@/components/shared/OnlineDmPanel";
 import { apiClient } from "@/lib/api";
 import { canAccessChallenges } from "@/lib/featureAccess";
+import { getGuestUserPlayAddress } from "@/lib/minipayGuestFlow";
 
 type MessageNotificationBellProps = {
   className?: string;
@@ -50,9 +51,11 @@ export default function MessageNotificationBell({
   username,
 }: MessageNotificationBellProps) {
   const router = useRouter();
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const guestAuth = useGuestAuthOptional();
   const guestUser = guestAuth?.guestUser ?? null;
+  const playAddress =
+    address || getGuestUserPlayAddress(guestUser) || guestUser?.address || undefined;
   const canChallenge =
     canAccessChallenges(username) || canAccessChallenges(guestUser?.username);
   const {
@@ -155,7 +158,11 @@ export default function MessageNotificationBell({
     setActionBusy("accept");
     setActionError(null);
     try {
-      const res = await apiClient.post(`/challenges/${challengeFocus.id}/accept`, {}, { timeout: 120000 });
+      const res = await apiClient.post(
+        `/challenges/${challengeFocus.id}/accept`,
+        playAddress ? { address: playAddress, chain: "CELO" } : {},
+        { timeout: 120000 }
+      );
       const body = res?.data as { data?: { gameCode?: string }; message?: string } | undefined;
       const code =
         body?.data?.gameCode ||
@@ -184,7 +191,10 @@ export default function MessageNotificationBell({
     setActionBusy("reject");
     setActionError(null);
     try {
-      await apiClient.post(`/challenges/${challengeFocus.id}/reject`);
+      await apiClient.post(
+        `/challenges/${challengeFocus.id}/reject`,
+        playAddress ? { address: playAddress, chain: "CELO" } : {}
+      );
       dismissChallenge(challengeFocus.id);
       setChallengeFocus(null);
       void refreshChallenges();
