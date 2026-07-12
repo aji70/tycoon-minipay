@@ -14,6 +14,7 @@ import { useJoinRoomAuthContinuation } from "@/components/settings/useJoinRoomAu
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import WhoIsOnlineControl from "@/components/shared/WhoIsOnlineControl";
+import ChallengeOnlinePlayers from "@/components/settings/ChallengeOnlinePlayers";
 import { useGetUsername } from "@/context/ContractProvider";
 
 interface JoinRoomMobileProps {
@@ -263,6 +264,13 @@ export default function JoinRoom({
           <JoinRoomAuthModal open={modalOpen} hint={modalHint} onDismiss={cancelModal} />
 
           <div className="space-y-6">
+            {canAct && (
+              <ChallengeOnlinePlayers
+                username={previewUsername}
+                redirectToWaiting={redirectToWaiting}
+              />
+            )}
+
             {/* ENTER ACCESS CODE */}
             <div>
               <p className="text-cyan-400/70 font-orbitron text-xs uppercase tracking-widest mb-3">Enter Access Code</p>
