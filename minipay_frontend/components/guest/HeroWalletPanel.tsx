@@ -253,7 +253,7 @@ const HeroWalletPanel: React.FC<HeroWalletPanelProps> = ({ onReturningPlayerChan
     );
   }, [guestUser, user, localUsername, fetchedUsername, inputUsername]);
 
-  /** Soft-launch: Multiplayer / Join Game only for these tester usernames. */
+  /** Multiplayer / Join Game — open to all signed-in players. */
   const canSeeMultiplayer = canAccessMultiplayerPreview(displayUsername);
 
   const { levelInfo } = useUserLevel({
