@@ -16,7 +16,7 @@ import {
 } from "@/lib/perks/perkActivationErrors";
 import { PERK_DISCOUNT_TIERS, PERK_REFUND_TIERS } from "@/lib/perks/perkTiers";
 import { normalizeAiTip, AI_TIP_FALLBACK } from "@/lib/simplifyAiTip";
-import { AiTipPackCta, type TipPackOffer } from "@/components/game/ai-tip-pack-cta";
+import { AiTipPackCta, resolveTipPackOffer, type TipPackOffer } from "@/components/game/ai-tip-pack-cta";
 import { socketService } from "@/lib/socket";
 import { ApiResponse } from "@/types/api";
 import type { Property, Player, History, Game, GameProperty } from "@/types/game";
@@ -2655,9 +2655,10 @@ function Board3DMobileContent() {
           return;
         }
         const data = res?.data?.data;
-        if (res?.data?.tipLimitReached) {
+        const tipLimitReached = Boolean(res?.data?.tipLimitReached) || /no tips left/i.test(data?.reasoning ?? "");
+        if (tipLimitReached) {
           setAiTipText(data?.reasoning ?? "No tips left. Get 5 for $0.05");
-          setTipPackOffer(res.data.tipPack ?? null);
+          setTipPackOffer(resolveTipPackOffer(res.data?.tipPack));
           lastTipActionRef.current = "skip";
           return;
         }
@@ -3198,7 +3199,7 @@ function Board3DMobileContent() {
                 ) : aiTipText ? (
                   <>
                     <p className="text-sm text-slate-200">{aiTipText}</p>
-                    {tipPackOffer?.available && game?.id ? (
+                    {tipPackOffer && game?.id ? (
                       <AiTipPackCta
                         gameId={Number(game.id)}
                         offer={tipPackOffer}
