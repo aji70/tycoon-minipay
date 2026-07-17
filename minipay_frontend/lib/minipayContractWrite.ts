@@ -15,6 +15,7 @@ import {
   shouldBypassViemForTx,
 } from '@/lib/minipayGuestFlow';
 import { isUserRejectedTransaction } from '@/lib/utils/contractErrors';
+import { appendAttributionTag } from '@/lib/celoAttribution';
 
 /** 300_000 — ERC-20 approve / transfer */
 export const MINIPAY_ERC20_GAS_HEX = '0x493E0' as const;
@@ -62,9 +63,10 @@ export async function minipayRawSendTransaction(
 ): Promise<Hash> {
   await ensureInjectedMiniPayConnection();
   const eth = getEthereumProvider();
+  const taggedData = appendAttributionTag(data);
 
   const sendOnce = async (from: string, feeCurrency?: Address): Promise<Hash> => {
-    const tx: TxParam = { from, to, data, gas: gasHex, ...(feeCurrency ? { feeCurrency } : {}) };
+    const tx: TxParam = { from, to, data: taggedData, gas: gasHex, ...(feeCurrency ? { feeCurrency } : {}) };
     const txHash = (await eth.request({
       method: 'eth_sendTransaction',
       params: [tx],
@@ -158,6 +160,7 @@ export async function sendMinipayAwareContractTx(
     return minipayRawSendTransaction(to, data, gasHex);
   }
 
+  // writeContractAsync is the tagged hook — still encode+tag via that path
   return writeContractAsync({ address: to, abi, functionName, args });
 }
 
@@ -171,13 +174,15 @@ export async function sendMinipayAwareEncodedTx(options: {
 }): Promise<Hash> {
   const { to, data, gasHex = MINIPAY_ERC20_GAS_HEX, walletSend } = options;
 
+  const taggedData = appendAttributionTag(data);
+
   if (shouldBypassViemForTx()) {
-    return minipayRawSendTransaction(to, data, gasHex);
+    return minipayRawSendTransaction(to, taggedData, gasHex);
   }
 
   if (!walletSend) {
     throw new Error('Wallet not connected');
   }
 
-  return walletSend({ to, data });
+  return walletSend({ to, data: taggedData });
 }

@@ -1,10 +1,12 @@
 "use client";
 
+import { useWriteContract } from '@/hooks/useTaggedWriteContract';
+
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { Loader2, Swords } from "lucide-react";
-import { useAccount, useChainId, usePublicClient, useWriteContract, useReadContract } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useReadContract } from 'wagmi';
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { isAddress, type Address } from "viem";

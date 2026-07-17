@@ -79,13 +79,10 @@ export default function LobbyChatControl({
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 320 }}
-              className="fixed bottom-0 left-0 right-0 z-[1201] max-h-[80dvh] overflow-y-auto rounded-t-2xl border-t-2 border-cyan-500/35 bg-gradient-to-b from-[#0c1c28] to-[#071018] pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_40px_rgba(0,0,0,0.55)]"
+              className="fixed inset-0 z-[1201] flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#0c1c28] to-[#071018] pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]"
             >
-              <div className="mx-auto max-w-md px-4 pb-6 pt-3">
-                <div className="mb-3 flex justify-center">
-                  <div className="h-1.5 w-12 rounded-full bg-cyan-400/60" />
-                </div>
-                <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-4 pb-4 pt-3">
+                <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
                   <div>
                     <h3
                       id="lobby-chat-title"
@@ -111,6 +108,7 @@ export default function LobbyChatControl({
                   address={presenceAddress}
                   userId={guestUser?.id}
                   username={guestUser?.username ?? username}
+                  fillHeight
                   onPlayerClick={(player) => {
                     setOpen(false);
                     try {
@@ -123,13 +121,6 @@ export default function LobbyChatControl({
                   }}
                 />
 
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="mt-5 flex min-h-12 w-full items-center justify-center rounded-xl border border-cyan-500/40 bg-cyan-500/10 font-orbitron text-xs font-bold uppercase tracking-wider text-cyan-100"
-                >
-                  Close
-                </button>
               </div>
             </motion.div>
           </>
