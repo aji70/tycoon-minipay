@@ -147,7 +147,13 @@ export default async function RootLayout({
                 <ScrollToTopBtn />
                 <DeferredUiStyles />
                 <DeferredToasts />
-                <Toaster position="top-center" />
+                <Toaster
+                  position="top-center"
+                  containerStyle={{
+                    zIndex: 2147483647,
+                    top: "max(1rem, calc(env(safe-area-inset-top) + 0.5rem))",
+                  }}
+                />
               </AppKitProviderWrapper>
               </DeferredGuestAuthProvider>
         </ContextProvider>
