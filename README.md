@@ -157,7 +157,7 @@ See [Contract addresses](#-contract-addresses) for addresses. In `frontend/.env.
 
 - **Play vs AI** — Create a game with AI opponents; your wallet must be registered on-chain. AI uses Tycoon-hosted agent (credits) or built-in rule-based logic when out of credits.
 - **Play vs Humans (PvP)** — Create game (settings, entry stake in USDC, player count) → get 6-character code → others join by code → waiting room → pick token, pay stake if required → game starts when full.
-- **Tournament / entry stakes** — USDC entry fees and prize pool via tournament escrow contract; winner claims on-chain.
+- **Tournament / entry stakes** — USDC entry fees and prize pool via tournament escrow contract; winner claims on-chain
 
 ### Board & UI
 
