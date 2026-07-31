@@ -16,6 +16,7 @@ import {
 } from "@/lib/perks/perkActivationErrors";
 import { PERK_DISCOUNT_TIERS, PERK_REFUND_TIERS } from "@/lib/perks/perkTiers";
 import { normalizeAiTip, AI_TIP_FALLBACK } from "@/lib/simplifyAiTip";
+import { AiTipPackCta, resolveTipPackOffer, type TipPackOffer } from "@/components/game/ai-tip-pack-cta";
 import { socketService } from "@/lib/socket";
 import { ApiResponse } from "@/types/api";
 import type { Property, Player, History, Game, GameProperty } from "@/types/game";
@@ -38,7 +39,7 @@ import { useAgentAutoLiquidate } from "@/hooks/useAgentAutoLiquidate";
 import { useAgentBindings } from "@/hooks/useAgentBindings";
 import { useMobilePropertyActions } from "@/hooks/useMobilePropertyActions";
 import { useGetGameByCode, useRewardBurnCollectible } from "@/context/ContractProvider";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import {
   isAIPlayer,
   getAiSlotFromPlayer,
@@ -439,6 +440,8 @@ function Board3DMobileContent() {
     }
   }, []);
   const [aiTipLoading, setAiTipLoading] = useState(false);
+  const [tipPackOffer, setTipPackOffer] = useState<TipPackOffer | null>(null);
+  const [tipFetchNonce, setTipFetchNonce] = useState(0);
   const lastTipPropertyIdRef = useRef<number | null>(null);
   const lastTipActionRef = useRef<"buy" | "skip" | null>(null);
 
@@ -2240,6 +2243,7 @@ function Board3DMobileContent() {
             myProperties: freshGameProperties
               .filter((gp) => gp.address?.toLowerCase() === freshMe?.address?.toLowerCase())
               .map((gp) => ({ ...properties.find((p) => p.id === gp.property_id), ...gp })),
+            properties: properties.map((p) => ({ id: p.id, name: p.name, price: p.price, color: p.color })),
             opponents: (freshGame?.players ?? []).filter((p: Player) => p.user_id !== me.user_id),
             tradeOffer: trade,
           };
@@ -2579,9 +2583,17 @@ function Board3DMobileContent() {
   useEffect(() => {
     if (!buyPrompted) {
       setAiTipText(null);
+      setTipPackOffer(null);
       lastTipPropertyIdRef.current = null;
     }
   }, [buyPrompted]);
+
+  const refetchAiTipAfterPack = useCallback(() => {
+    setTipPackOffer(null);
+    setAiTipText(null);
+    lastTipPropertyIdRef.current = null;
+    setTipFetchNonce((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     if (
@@ -2597,6 +2609,7 @@ function Board3DMobileContent() {
     if (lastTipPropertyIdRef.current === propId) return;
     lastTipPropertyIdRef.current = propId;
     setAiTipLoading(true);
+    setTipPackOffer(null);
     const groupIds =
       Object.values(MONOPOLY_STATS.colorGroups).find((ids) => ids.includes(justLandedProperty.id)) ?? [];
     const ownedInGroup = groupIds.filter((id) =>
@@ -2607,10 +2620,17 @@ function Board3DMobileContent() {
     const completesMonopoly = groupIds.length > 0 && ownedInGroup === groupIds.length - 1;
     const landingRank = (MONOPOLY_STATS.landingRank as Record<number, number>)[justLandedProperty.id] ?? 99;
     apiClient
-      .post<{ success?: boolean; data?: { reasoning?: string }; fallbackReason?: string }>("/agent-registry/decision", {
+      .post<{
+        success?: boolean;
+        data?: { reasoning?: string; action?: string };
+        fallbackReason?: string;
+        tipLimitReached?: boolean;
+        tipPack?: TipPackOffer;
+      }>("/agent-registry/decision", {
         gameId: game?.id,
         slot: 1,
         decisionType: "tip",
+        userId: currentPlayer.user_id,
         context: {
           myBalance: currentPlayer.balance ?? 0,
           myProperties: gameProperties
@@ -2635,6 +2655,13 @@ function Board3DMobileContent() {
           return;
         }
         const data = res?.data?.data;
+        const tipLimitReached = Boolean(res?.data?.tipLimitReached) || /no tips left/i.test(data?.reasoning ?? "");
+        if (tipLimitReached) {
+          setAiTipText(data?.reasoning ?? "No tips left. Get 5 for $0.05");
+          setTipPackOffer(resolveTipPackOffer(res.data?.tipPack));
+          lastTipActionRef.current = "skip";
+          return;
+        }
         const text = data?.reasoning ?? null;
         setAiTipText(normalizeAiTip(text) ?? AI_TIP_FALLBACK);
         lastTipActionRef.current = data?.action === "buy" ? "buy" : "skip";
@@ -2656,6 +2683,7 @@ function Board3DMobileContent() {
     game?.players,
     gameProperties,
     properties,
+    tipFetchNonce,
   ]);
 
   useEffect(() => {
@@ -3169,7 +3197,16 @@ function Board3DMobileContent() {
                 {aiTipLoading ? (
                   <p className="text-sm text-slate-400">Thinking…</p>
                 ) : aiTipText ? (
-                  <p className="text-sm text-slate-200">{aiTipText}</p>
+                  <>
+                    <p className="text-sm text-slate-200">{aiTipText}</p>
+                    {tipPackOffer && game?.id ? (
+                      <AiTipPackCta
+                        gameId={Number(game.id)}
+                        offer={tipPackOffer}
+                        onPurchased={refetchAiTipAfterPack}
+                      />
+                    ) : null}
+                  </>
                 ) : null}
               </div>
             )}
@@ -3570,14 +3607,6 @@ function Board3DMobileContent() {
           bottomClass="bottom-24"
         />
       )}
-
-      <Toaster
-        position="top-center"
-        containerStyle={{
-          zIndex: 2147483647,
-          top: "max(3.25rem, calc(env(safe-area-inset-top) + 2.75rem))",
-        }}
-      />
     </div>
   );
 }

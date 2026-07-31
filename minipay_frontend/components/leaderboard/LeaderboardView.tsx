@@ -98,6 +98,7 @@ function RankCard({
   tier,
   bountyMode,
   bountyWinnerCount,
+  bountyPrizeUsd,
 }: {
   row: BountyRow;
   rank: number;
@@ -105,6 +106,7 @@ function RankCard({
   tier: RankCardTier;
   bountyMode: boolean;
   bountyWinnerCount: number;
+  bountyPrizeUsd: number | null;
 }) {
   const isPodium = tier === 'podium' && rank >= 1 && rank <= 3;
   const podium = isPodium ? PODIUM_META[rank as 1 | 2 | 3] : null;
@@ -178,9 +180,9 @@ function RankCard({
               {podium.badge}
             </span>
           )}
-          {inBountyPrize && (
+          {inBountyPrize && bountyPrizeUsd != null && (
             <span className="text-[9px] font-orbitron font-bold uppercase tracking-wider text-amber-400/90 px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10">
-              $5
+              ${bountyPrizeUsd}
             </span>
           )}
         </div>
@@ -244,6 +246,7 @@ export type LeaderboardViewProps = {
   bountyMonthLabel: string;
   bountyCompleted: boolean;
   bountyWinnerCount: number;
+  bountyPrizeUsd: number | null;
   isFeaturedBountyView: boolean;
   lastUpdatedAt: string | null;
 };
@@ -264,6 +267,7 @@ export function LeaderboardView({
   onRetry,
   bountyMonthLabel,
   bountyWinnerCount,
+  bountyPrizeUsd,
   isFeaturedBountyView,
   lastUpdatedAt,
 }: LeaderboardViewProps) {
@@ -318,6 +322,7 @@ export function LeaderboardView({
                 tier={cardTier(rank, mode)}
                 bountyMode={mode}
                 bountyWinnerCount={bountyWinnerCount}
+                bountyPrizeUsd={bountyPrizeUsd}
               />
             );
           })}
@@ -333,6 +338,7 @@ export function LeaderboardView({
                 tier="rest"
                 bountyMode={mode}
                 bountyWinnerCount={bountyWinnerCount}
+                bountyPrizeUsd={bountyPrizeUsd}
               />
             );
           })}
@@ -348,6 +354,7 @@ export function LeaderboardView({
                 tier="rest"
                 bountyMode={mode}
                 bountyWinnerCount={bountyWinnerCount}
+                bountyPrizeUsd={bountyPrizeUsd}
               />
             );
           })}

@@ -209,7 +209,7 @@ export default function PlayWithAI3DMobile() {
                 {[
                   { id: "easy", label: "EASY", icon: "🟢" },
                   { id: "hard", label: "HARD", icon: "🟡" },
-                  { id: "boss", label: "BOSS", icon: "💀" },
+                  { id: "boss", label: "AGENT", icon: "🤖" },
                 ].map((diff, idx) => (
                   <motion.button
                     key={diff.id}
