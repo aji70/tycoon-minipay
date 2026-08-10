@@ -267,4 +267,3 @@ MIT License — see [LICENSE](./LICENSE).
 Built with ❤️ on Base, Stacks & Celo.  
 *“Roll the dice. Build your empire.”*
 
- <!-- git commit --allow-empty -m "chore: trigger Vercel deploy after force-pus" -->
