@@ -27,6 +27,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   productionBrowserSourceMaps: false,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
   /**
    * Next 14 always imports `polyfill-module` from the client runtime (trimStart, .at, etc.).
    * Browserslist/SWC only affect syntax downleveling — not this file. Stub it for MiniPay.
