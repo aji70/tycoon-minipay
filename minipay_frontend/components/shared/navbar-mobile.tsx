@@ -5,7 +5,7 @@ import { motion, useScroll, useSpring } from 'framer-motion';
 import Logo from './logo';
 import LogoIcon from '@/public/logo.png';
 import Link from 'next/link';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { House, Volume2, VolumeOff, Globe, Menu, X, ShoppingBag, Trophy, BookOpen, FileText, Shield, LifeBuoy, ChevronRight } from 'lucide-react';
 import { useAccount, useChainId, useConnect } from 'wagmi';
@@ -36,15 +36,9 @@ interface NavBarMobileProps {
   minimal?: boolean;
 }
 
-const PREFETCH_ROUTES = [
-  '/game-shop',
-  '/leaderboard',
-] as const;
-
 const NavBarMobile = ({ minimal = false }: NavBarMobileProps) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { scrollY, scrollYProgress } = useScroll();
 
   const isGamePage = pathname?.includes('/board') || pathname?.includes('game-play') || pathname?.includes('ai-play');
@@ -117,13 +111,6 @@ const NavBarMobile = ({ minimal = false }: NavBarMobileProps) => {
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
   const [isMiniPay, setIsMiniPay] = useState(false);
 
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      PREFETCH_ROUTES.forEach((r) => router.prefetch(r));
-    }, 2000);
-    return () => window.clearTimeout(t);
-  }, [router]);
-
   const safeAddress = address && isAddress(address) ? (address as `0x${string}`) : undefined;
   const { data: onChainUsername } = useGetUsername(safeAddress);
   const profileAvatar = useProfileAvatar();
@@ -188,8 +175,8 @@ const NavBarMobile = ({ minimal = false }: NavBarMobileProps) => {
   const navItem = (href: string, icon: React.ReactNode, label: string, color = 'text-[#00F0FF]/90', onClick?: () => void) => (
     <Link
       href={href}
+      prefetch={false}
       onClick={() => { closeMobileMenu(); onClick?.(); }}
-      onMouseEnter={() => router.prefetch(href)}
       className="flex items-center gap-4 py-3.5 px-4 rounded-xl bg-[#011112]/70 hover:bg-[#022a2c]/80 border border-transparent hover:border-[#00F0FF]/25 text-[#E0F7F7] font-medium transition-all duration-200 hover:shadow-[0_0_20px_rgba(0,240,255,0.08)] active:scale-[0.98]"
     >
       <div className={`w-9 h-9 rounded-lg bg-[#003B3E]/60 flex items-center justify-center ${color} shrink-0`}>
@@ -290,6 +277,7 @@ const NavBarMobile = ({ minimal = false }: NavBarMobileProps) => {
               {(isConnected || guestUser || isPrivyAuthed) && (
                 <Link
                   href="/profile"
+                  prefetch={false}
                   onClick={closeMobileMenu}
                   className="mb-5 p-4 rounded-2xl bg-gradient-to-br from-[#022a2c]/90 to-[#011112] border border-[#00F0FF]/25 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(0,240,255,0.06)] flex items-center gap-3 hover:border-[#00F0FF]/45 hover:shadow-[0_0_24px_rgba(0,240,255,0.1)] active:scale-[0.99] transition-all duration-200 block"
                 >

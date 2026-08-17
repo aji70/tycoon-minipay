@@ -28,7 +28,7 @@ const Logo: FC<LogoTypes> = ({
   imageClassName = "w-full h-auto",
 }) => {
     return (
-        <Link href={href} className={className}>
+        <Link href={href} prefetch={false} className={className}>
             <Image
                 src={image}
                 alt="Logo"

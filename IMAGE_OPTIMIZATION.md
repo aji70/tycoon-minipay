@@ -45,8 +45,23 @@ npm run images:convert-webp
 
 Then point `src` at `.webp` where you still have huge PNG/JPG. Originals can stay as fallback.
 
+## Edge Requests (separate meter)
+
+Vercel counts **every** CDN hit: HTML, JS chunks, CSS, images, `/_next/image`, and Next.js **prefetch**.
+
+Chat/game polling does **not** count — that goes to Railway (`NEXT_PUBLIC_API_URL`).
+
+What does count:
+- Board/shop images hosted on Vercel (one request per file, every uncached load)
+- JS bundles (wagmi, three.js, etc.)
+- `Link` prefetch of `/game-shop`, `/leaderboard`, `/profile`, …
+
+Nav/footer prefetch is now off (`prefetch={false}`). Cache-Control on images cuts **repeat** visits.
+
+To cut Edge Requests further, host `/public` images on Cloudflare R2 (or similar) so those files never hit Vercel.
+
 ## After deploy, check Vercel
 
 1. **Usage → Image Optimization** should drop toward zero (no `/_next/image` in Network).
-2. **Bandwidth** should fall if you ship WebP and browsers cache (immutable headers).
+2. **Edge Requests** should fall as prefetch and `/_next/image` variants stop.
 3. Confirm a board load: image URLs should be `/boards/...` or `/shopcards/...`, not `/_next/image?...`.

@@ -23,6 +23,7 @@ const Footer = () => {
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
           <Link
             href="/how-to-play"
+            prefetch={false}
             className="text-[#F0F7F7] hover:text-[#00F0FF] text-[12px] font-dmSans font-[400] transition-colors"
           >
             How to Play
@@ -30,6 +31,7 @@ const Footer = () => {
           <span className="text-[#455A64] hidden sm:inline">·</span>
           <Link
             href="/terms"
+            prefetch={false}
             className="text-[#F0F7F7] hover:text-[#00F0FF] text-[12px] font-dmSans font-[400] transition-colors"
           >
             Terms
@@ -37,6 +39,7 @@ const Footer = () => {
           <span className="text-[#455A64] hidden sm:inline">·</span>
           <Link
             href="/privacy"
+            prefetch={false}
             className="text-[#F0F7F7] hover:text-[#00F0FF] text-[12px] font-dmSans font-[400] transition-colors"
           >
             Privacy
@@ -44,6 +47,7 @@ const Footer = () => {
           <span className="text-[#455A64] hidden sm:inline">·</span>
           <Link
             href="/cookies"
+            prefetch={false}
             className="text-[#F0F7F7] hover:text-[#00F0FF] text-[12px] font-dmSans font-[400] transition-colors"
           >
             Cookies
