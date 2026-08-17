@@ -202,7 +202,7 @@ const GameStats: React.FC = () => {
           width={1440}
           height={1024}
           priority
-          quality={100}
+          quality={70}
         />
       </div>
 
