@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import useSound from 'use-sound';
+import { assetUrl } from '@/lib/assetUrl';
 
 type ThemeSoundPlayerProps = {
   playing: boolean;
@@ -19,7 +20,7 @@ export default function ThemeSoundPlayer({ playing }: ThemeSoundPlayerProps) {
 
   // Only initialize sound when playing is true (user has clicked sound button)
   // This defers the 1.3MB fetch until necessary
-  const [play, { pause }] = useSound('/sound/monopoly-theme.mp3', {
+  const [play, { pause }] = useSound(assetUrl('/sound/monopoly-theme.mp3'), {
     volume: 0.5,
     loop: true,
     // Lazy load: only preload audio when component mounts (user already clicked)

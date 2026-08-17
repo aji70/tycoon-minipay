@@ -9,7 +9,6 @@ import {
   Loader2, Send, ChevronDown, ChevronUp, ArrowLeft, Camera, User, FileText, Pencil, Shield
 } from 'lucide-react';
 import Link from 'next/link';
-import avatar from '@/public/avatar.jpg';
 import { useAccount, useBalance, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 import { type Address } from 'viem';
 import { toast } from 'react-toastify';
@@ -585,7 +584,7 @@ function GuestProfileViewMobile({
                   {profile?.avatar ? (
                     <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover aspect-square" />
                   ) : (
-                    <Image src={avatar} alt="Avatar" width={88} height={88} className="w-full h-full object-cover aspect-square" />
+                    <Image src="/avatar.jpg" alt="Avatar" width={88} height={88} className="w-full h-full object-cover aspect-square" />
                   )}
                   <span className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="w-10 h-10 rounded-full bg-cyan-500/30 flex items-center justify-center">
@@ -1446,7 +1445,7 @@ export default function ProfilePageMobile() {
                 {profile?.avatar ? (
                   <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover aspect-square" />
                 ) : (
-                  <Image src={avatar} alt="Avatar" width={88} height={88} className="w-full h-full object-cover aspect-square" />
+                  <Image src="/avatar.jpg" alt="Avatar" width={88} height={88} className="w-full h-full object-cover aspect-square" />
                 )}
                 <span className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="w-10 h-10 rounded-full bg-cyan-500/30 flex items-center justify-center">

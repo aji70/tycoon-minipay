@@ -7,7 +7,6 @@ import { toast } from "react-toastify";
 import { BarChart2, Trophy, Wallet, Crown, Users, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import herobg from "@/public/heroBg.png";
 import { apiClient } from "@/lib/api";
 import { ApiResponse } from "@/types/api";
 import { parseLeaderboardApiResponse } from "@/components/leaderboard/leaderboard-types";
@@ -196,7 +195,7 @@ const GameStats: React.FC = () => {
       {/* Background Image */}
       <div className="w-full h-full absolute inset-0 overflow-hidden">
         <Image
-          src={herobg}
+          src="/heroBg.png"
           alt="Hero Background"
           className="w-full h-full object-cover hero-bg-zoom opacity-50"
           width={1440}

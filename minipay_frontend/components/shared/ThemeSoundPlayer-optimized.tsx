@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useMemo } from 'react';
 import useSound from 'use-sound';
+import { assetUrl } from '@/lib/assetUrl';
 
 type ThemeSoundPlayerProps = {
   playing: boolean;
@@ -25,16 +26,16 @@ export default function ThemeSoundPlayer({ playing }: ThemeSoundPlayerProps) {
 
   // Determine best audio format based on browser support
   const audioSrc = useMemo(() => {
-    if (typeof window === 'undefined') return '/sound/monopoly-theme-128.mp3';
+    if (typeof window === 'undefined') return assetUrl('/sound/monopoly-theme-128.mp3');
 
     // Prefer OGG (smaller) for modern browsers
     const audio = document.createElement('audio');
     if (audio.canPlayType?.('audio/ogg') === 'probably' || audio.canPlayType?.('audio/ogg') === 'maybe') {
-      return '/sound/monopoly-theme-96.ogg';
+      return assetUrl('/sound/monopoly-theme-96.ogg');
     }
 
     // Fallback to MP3
-    return '/sound/monopoly-theme-128.mp3';
+    return assetUrl('/sound/monopoly-theme-128.mp3');
   }, []);
 
   const [play, { pause }] = useSound(audioSrc, {

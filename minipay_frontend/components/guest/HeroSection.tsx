@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import herobg from "@/public/heroBg.png";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import HeroMarketingContent from "@/components/guest/HeroMarketingContent";
@@ -108,7 +107,7 @@ const HeroSection: React.FC = () => {
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           <Image
-            src={herobg}
+            src="/heroBg.png"
             alt="Hero Background"
             className="w-full h-full object-cover"
             width={1440}

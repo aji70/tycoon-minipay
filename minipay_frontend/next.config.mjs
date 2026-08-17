@@ -28,13 +28,12 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: false,
   /**
-   * Do NOT use Vercel Image Optimization (`/_next/image`).
-   * Board/shop/hero assets are static files; each unique w/q/format combo is a
-   * billed transformation. MiniPay traffic × many tiles explodes that invoice.
-   * Serve precompressed files from /public (WebP) — bandwidth only.
+   * Custom loader serves /public art from jsDelivr (or NEXT_PUBLIC_ASSET_CDN).
+   * Bypasses Vercel Image Optimization AND Vercel Edge Requests for those files.
    */
   images: {
-    unoptimized: true,
+    loader: "custom",
+    loaderFile: "./lib/cdn-image-loader.js",
   },
   /**
    * Next 14 always imports `polyfill-module` from the client runtime (trimStart, .at, etc.).

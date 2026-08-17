@@ -12,7 +12,7 @@ import React, { FC } from "react";
  * function as a navigational element.
  *
  * @param {string} className - Custom class names for styling the link.
- * @param {StaticImageData} image - The image source data for the logo.
+ * @param {string} image - Public path for the logo (served from the asset CDN in production).
  * @param {string} href - The URL to navigate to when the logo is clicked.
  * 
  * @returns {JSX.Element} A link element containing an image.

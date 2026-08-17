@@ -1,5 +1,4 @@
 import React from "react";
-import logo from "@/public/footerLogo.svg";
 import Logo from "./logo";
 import Link from "next/link";
 import { FiFacebook, FiGithub } from "react-icons/fi";
@@ -12,7 +11,7 @@ const Footer = () => {
       <div className="w-full max-w-[1120px] mx-auto flex flex-col md:flex-row items-center md:justify-between justify-center md:gap-0 gap-4 bg-[#0B191A] rounded-[16px] p-[20px] border border-[#003B3E]/50 game-panel">
         <Logo
           className="block md:w-[60px] w-[55px] shrink-0"
-          image={logo}
+          image="/footerLogo.svg"
           href="/"
           width={64}
           height={64}

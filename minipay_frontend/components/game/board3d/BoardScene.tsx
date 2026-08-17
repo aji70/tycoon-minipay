@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { getPosition3D, getPosition3DFromGrid } from "./positions";
 import { getSquareName } from "./squareNames";
 import { getPlayerSymbol } from "@/lib/types/symbol";
+import { assetUrl } from "@/lib/assetUrl";
 import VacantPropertyCard3D from "./VacantPropertyCard3D";
 import type { Property } from "@/types/game";
 import type { Player } from "@/types/game";
@@ -945,7 +946,7 @@ export default function BoardScene({
   focusTilePosition = null,
   onFocusComplete,
   spinOrbitDegrees = 0,
-  boardCenterImageUrl = "/bb.jpg",
+  boardCenterImageUrl = assetUrl("/bb.jpg"),
 }: BoardSceneProps) {
   const camera = useThree((s) => s.camera);
   const controlsRef = useRef<any>(null);

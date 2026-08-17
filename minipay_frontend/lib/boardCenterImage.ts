@@ -1,3 +1,5 @@
+import { assetUrl } from "@/lib/assetUrl";
+
 /** Center-of-board background by `game.board_id` (square names theme). */
 const BOARD_CENTER_IMAGES: Record<string, string> = {
   kaduna_state: "/boards/kaduna.jpg",
@@ -20,6 +22,6 @@ const BOARD_CENTER_IMAGES: Record<string, string> = {
 
 export function getBoardCenterImageUrl(boardId?: string | null): string {
   const id = (boardId ?? "default").trim().toLowerCase();
-  if (!id || id === "default" || id === "metro") return "/bb.jpg";
-  return BOARD_CENTER_IMAGES[id] ?? "/bb.jpg";
+  if (!id || id === "default" || id === "metro") return assetUrl("/bb.jpg");
+  return assetUrl(BOARD_CENTER_IMAGES[id] ?? "/bb.jpg");
 }

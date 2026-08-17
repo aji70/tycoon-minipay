@@ -7,6 +7,7 @@ The previous advice (enable AVIF/WebP **via** `next/image`) **increased** the bi
 | Meter | What triggers it | This app |
 | --- | --- | --- |
 | **Image Optimization** | Every unique `/_next/image?url=…&w=…&q=…` | Board tiles, shop cards, perks, hero — many images × many device widths |
+| **Edge Requests** | Every CDN hit on Vercel (HTML, JS, CSS, `/public` images, prefetch) | Board/shop art was the bulk after Image Optimization |
 | **Bandwidth** | Bytes actually downloaded | Large PNG/JPG in `/public` |
 | **Function duration** | Serverless / Fluid CPU time | Not the main driver here |
 
@@ -22,15 +23,31 @@ Bandwidth math in the old doc (`10k users × 30 images × 25MB`) was also wrong:
 
 ## Fix (in code)
 
-`next.config.mjs` now has:
+`next.config.mjs` uses a **custom image loader** (not `unoptimized` alone):
 
 ```js
 images: {
-  unoptimized: true, // skip /_next/image — no Image Optimization invoice
+  loader: "custom",
+  loaderFile: "./lib/cdn-image-loader.js",
 }
 ```
 
-`<Image>` still works; it just serves `/public/...` as static files (CDN + cache). Static image/audio also get a 1-year `Cache-Control`.
+That does two things:
+
+1. **No `/_next/image`** → Image Optimization invoice goes to zero.
+2. **Production `src` points at a CDN**, not Vercel `/public` → those files are **not** Edge Requests.
+
+Default CDN is jsDelivr (same files as GitHub `main`):
+
+`https://cdn.jsdelivr.net/gh/aji70/tycoon-minipay@main/minipay_frontend/public`
+
+Override with `NEXT_PUBLIC_ASSET_CDN` (Cloudflare R2 public URL, no trailing slash) if you want your own origin.
+
+Local `next dev` still uses `/public` on localhost.
+
+Three.js board-center textures and theme audio use `assetUrl()` in `lib/assetUrl.ts` (they never go through `next/image`).
+
+Nav/footer `Link` prefetch is off (`prefetch={false}`). Static files that still hit Vercel (JS/CSS/HTML) keep a 1-year `Cache-Control` where applicable.
 
 Redeploy the MiniPay frontend for this to take effect on Vercel.
 
@@ -51,17 +68,18 @@ Vercel counts **every** CDN hit: HTML, JS chunks, CSS, images, `/_next/image`, a
 
 Chat/game polling does **not** count — that goes to Railway (`NEXT_PUBLIC_API_URL`).
 
-What does count:
-- Board/shop images hosted on Vercel (one request per file, every uncached load)
-- JS bundles (wagmi, three.js, etc.)
-- `Link` prefetch of `/game-shop`, `/leaderboard`, `/profile`, …
+What still counts after this change:
 
-Nav/footer prefetch is now off (`prefetch={false}`). Cache-Control on images cuts **repeat** visits.
+- HTML + JS bundles (wagmi, three.js, etc.)
+- CSS
+- Favicon / app icons if they stay on Vercel
 
-To cut Edge Requests further, host `/public` images on Cloudflare R2 (or similar) so those files never hit Vercel.
+What should **stop** counting:
+
+- `/boards/...`, `/shopcards/...`, hero, logos, theme MP3 (loaded from jsDelivr or `NEXT_PUBLIC_ASSET_CDN`)
 
 ## After deploy, check Vercel
 
 1. **Usage → Image Optimization** should drop toward zero (no `/_next/image` in Network).
-2. **Edge Requests** should fall as prefetch and `/_next/image` variants stop.
-3. Confirm a board load: image URLs should be `/boards/...` or `/shopcards/...`, not `/_next/image?...`.
+2. **Edge Requests** should fall as board/shop images leave Vercel.
+3. Confirm a board load: image URLs should be `cdn.jsdelivr.net/gh/aji70/tycoon-minipay@...` (or your R2 host), not `tycoonworld.xyz/boards/...` and not `/_next/image?...`.

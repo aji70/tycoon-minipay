@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import Logo from './logo';
-import LogoIcon from '@/public/logo.png';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -11,7 +10,6 @@ import { House, Volume2, VolumeOff, Globe, Menu, X, ShoppingBag, Trophy, BookOpe
 import { useAccount, useChainId, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import Image from 'next/image';
-import avatar from '@/public/avatar.jpg';
 import ThemeSoundPlayer from './ThemeSoundPlayer';
 import { JulyBogoPromoBanner } from '@/components/promos/JulyBogoPromoBanner';
 import WhoIsOnlineControl from '@/components/shared/WhoIsOnlineControl';
@@ -215,7 +213,7 @@ const NavBarMobile = ({ minimal = false }: NavBarMobileProps) => {
               style={{ scaleX }}
             />
             <div className="flex-1 flex items-center gap-1.5 px-3 sm:px-4 bg-gradient-to-b from-[#021a1b]/95 to-[#010F10]/98 backdrop-blur-xl border-b-2 border-[#00F0FF]/20 shadow-[0_4px_20px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(0,240,255,0.08)]">
-              <Logo className="w-[40px] sm:w-[44px] shrink-0 drop-shadow-[0_0_8px_rgba(0,240,255,0.2)]" image={LogoIcon} href="/" />
+              <Logo className="w-[40px] sm:w-[44px] shrink-0 drop-shadow-[0_0_8px_rgba(0,240,255,0.2)]" image="/logo.png" href="/" />
               <div className="min-w-0 flex-1 flex items-center justify-center px-0.5">
                 <WhoIsOnlineControl username={displayName} />
               </div>
@@ -285,7 +283,7 @@ const NavBarMobile = ({ minimal = false }: NavBarMobileProps) => {
                     {guestNavAvatar || profileAvatar ? (
                       <img src={(guestNavAvatar || profileAvatar) as string} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <Image src={avatar} alt="Avatar" width={48} height={48} className="object-cover w-full h-full" />
+                      <Image src="/avatar.jpg" alt="Avatar" width={48} height={48} className="object-cover w-full h-full" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">

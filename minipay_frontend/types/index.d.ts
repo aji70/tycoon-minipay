@@ -1,9 +1,8 @@
 import React from "react";
-import { StaticImageData } from "next/image";
 
 export type LogoTypes = {
   className: string;
-  image: StaticImageData;
+  image: string;
   href: string;
   /** Intrinsic width/height for next/image (defaults tuned for navbar PNG). */
   width?: number;
