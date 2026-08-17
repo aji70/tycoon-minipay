@@ -42,3 +42,5 @@ next-env.d.ts
 
 # internal docs — do not commit
 API_METHODS.md
+IMAGE_OPTIMIZATION.md
+AUDIO_OPTIMIZATION.md
