@@ -116,27 +116,44 @@ export default function OnlineLobbyPanel({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<LobbyMessage[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const canSend = !!(userId != null || (address && String(address).trim()));
   const myLabel =
     (username && String(username).trim()) || shortAddress(address) || (userId != null ? `Player #${userId}` : "You");
 
-  const scrollToEnd = useCallback(() => {
-    requestAnimationFrame(() => endRef.current?.scrollIntoView({ behavior: "smooth" }));
+  messagesRef.current = messages;
+
+  const isNearBottom = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight <= 96;
+  }, []);
+
+  const scrollToEnd = useCallback((behavior: ScrollBehavior = "smooth") => {
+    requestAnimationFrame(() => {
+      const el = listRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior });
+    });
   }, []);
 
   const fetchMessages = useCallback(async () => {
     try {
+      const wasEmpty = messagesRef.current.length === 0;
+      const stickToBottom = isNearBottom() || wasEmpty;
       const res = await apiClient.get("/messages/lobby");
-      setMessages(unwrapList(res));
-      scrollToEnd();
+      const next = unwrapList(res);
+      messagesRef.current = next;
+      setMessages(next);
+      if (stickToBottom) scrollToEnd(wasEmpty ? "auto" : "smooth");
     } catch {
       // keep previous
     } finally {
       setLoading(false);
     }
-  }, [scrollToEnd]);
+  }, [isNearBottom, scrollToEnd]);
 
   useEffect(() => {
     void fetchMessages();
@@ -233,10 +250,11 @@ export default function OnlineLobbyPanel({
       </div>
 
       <div
+        ref={listRef}
         className={
           fillHeight
-            ? "min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 py-2"
-            : "max-h-[42vh] min-h-[12rem] space-y-2.5 overflow-y-auto px-3 py-3"
+            ? "min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-1 py-2"
+            : "max-h-[42vh] min-h-[12rem] space-y-2.5 overflow-y-auto overscroll-contain px-3 py-3"
         }
       >
         {loading && messages.length === 0 ? (
@@ -340,7 +358,6 @@ export default function OnlineLobbyPanel({
             );
           })
         )}
-        <div ref={endRef} />
       </div>
 
       {error && (

@@ -61,12 +61,22 @@ export default function OnlineDmPanel({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const conversationIdRef = useRef<number | null>(null);
   conversationIdRef.current = conversationId;
 
-  const scrollToEnd = useCallback(() => {
-    requestAnimationFrame(() => endRef.current?.scrollIntoView({ behavior: "smooth" }));
+  const isNearBottom = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight <= 96;
+  }, []);
+
+  const scrollToEnd = useCallback((behavior: ScrollBehavior = "smooth") => {
+    requestAnimationFrame(() => {
+      const el = listRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior });
+    });
   }, []);
 
   useEffect(() => {
@@ -132,7 +142,7 @@ export default function OnlineDmPanel({
         if (prev.some((m) => m.id === data.message!.id)) return prev;
         return [...prev, data.message!];
       });
-      scrollToEnd();
+      if (isNearBottom()) scrollToEnd();
     };
     try {
       socketService.onDmMessage(handler);
@@ -146,7 +156,7 @@ export default function OnlineDmPanel({
         // ignore
       }
     };
-  }, [scrollToEnd]);
+  }, [isNearBottom, scrollToEnd]);
 
   const send = async () => {
     const body = draft.trim();
@@ -200,10 +210,11 @@ export default function OnlineDmPanel({
       }
     >
       <div
+        ref={listRef}
         className={
           fillHeight
-            ? "min-h-0 flex-1 space-y-2 overflow-y-auto px-1 py-2"
-            : "max-h-[42vh] min-h-[12rem] space-y-2 overflow-y-auto px-3 py-3"
+            ? "min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-1 py-2"
+            : "max-h-[42vh] min-h-[12rem] space-y-2 overflow-y-auto overscroll-contain px-3 py-3"
         }
       >
         {messages.length === 0 ? (
@@ -239,7 +250,6 @@ export default function OnlineDmPanel({
             );
           })
         )}
-        <div ref={endRef} />
       </div>
 
       {error && (
