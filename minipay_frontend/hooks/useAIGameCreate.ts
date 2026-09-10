@@ -18,7 +18,7 @@ import {
   useRegisteredAIAgents,
 } from "@/context/ContractProvider";
 import { useGuestAuthOptional } from "@/context/GuestAuthContext";
-import { TYCOON_CONTRACT_ADDRESSES, MINIPAY_CHAIN_IDS } from "@/constants/contracts";
+import { TYCOON_CONTRACT_ADDRESSES } from "@/constants/contracts";
 import { shouldUseBackendGuestGameFlow, ensureMiniPayWalletReady } from "@/lib/minipayGuestFlow";
 import type { Address } from "viem";
 
@@ -96,7 +96,7 @@ export function useAIGameCreate(options?: UseAIGameCreateOptions) {
   const { agents: registeredAgents, isLoading: agentsLoading, isSupported: registrySupported } =
     useRegisteredAIAgents();
 
-  const isMiniPay = MINIPAY_CHAIN_IDS.includes(wagmiChainId);
+  const isMiniPay = true; // this is the MiniPay app — always tag creates
   const chainName = resolveChainForBackend(wagmiChainId);
 
   const [settings, setSettings] = useState<AIGameSettings>(DEFAULT_SETTINGS);

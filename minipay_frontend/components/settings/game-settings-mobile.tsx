@@ -31,7 +31,7 @@ import {
   useStakeTokenAddress,
 } from "@/context/ContractProvider";
 import { useGuestAuthOptional } from "@/context/GuestAuthContext";
-import { TYCOON_CONTRACT_ADDRESSES, MINIPAY_CHAIN_IDS } from "@/constants/contracts";
+import { TYCOON_CONTRACT_ADDRESSES } from "@/constants/contracts";
 import { shouldUseBackendGuestGameFlow, ensureMiniPayWalletReady } from "@/lib/minipayGuestFlow";
 import { Address, parseUnits } from "viem";
 import { getContractErrorMessage } from "@/lib/utils/contractErrors";
@@ -190,7 +190,7 @@ export default function CreateGameMobile({
   const showOnlineInHeader = true;
   const { data: isUserRegistered } = useIsRegistered(address);
 
-  const isMiniPay = MINIPAY_CHAIN_IDS.includes(wagmiChainId);
+  const isMiniPay = true; // MiniPay app — always tag creates
   const chainName = resolveChainForBackend(wagmiChainId);
 
   const [isFreeGame, setIsFreeGame] = useState(true);
