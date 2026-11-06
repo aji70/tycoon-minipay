@@ -190,9 +190,28 @@ export default function ArenaPage() {
    * Arena start-game needs a backend JWT (requireAuth). MiniPay has no signature-free login API —
    * JWT comes from localStorage `token` (prior loginByWallet / email) or a wallet signature via
    * POST /auth/login-by-wallet (same path as agents-page-mobile). Never prompt on page load.
+   *
+   * Returns username from a fresh /auth/me (or current guestUser) so callers do not read a stale
+   * React closure after hydrate — that caused "Sign in / register…" on the first launch click.
    */
-  const ensureBackendSessionForLaunch = useCallback(async (): Promise<boolean> => {
-    if (guestUser) return true;
+  const ensureBackendSessionForLaunch = useCallback(async (): Promise<{
+    ok: boolean;
+    username: string | null;
+  }> => {
+    const fromState = (guestUser?.username || "").trim();
+    if (guestUser?.id && fromState) {
+      return { ok: true, username: fromState };
+    }
+
+    const readUsernameFromMe = async (): Promise<{ ok: boolean; username: string | null }> => {
+      const me = await apiClient.get<{
+        success?: boolean;
+        data?: { id?: number; username?: string };
+      }>("auth/me");
+      const data = me?.data?.data;
+      if (!data?.id) return { ok: false, username: null };
+      return { ok: true, username: String(data.username || "").trim() || null };
+    };
 
     // Token may exist while guestUser is still null — hydrate first (no signature).
     try {
@@ -200,20 +219,18 @@ export default function ArenaPage() {
         typeof window !== "undefined" && window.localStorage
           ? window.localStorage.getItem("token")
           : null;
-      if (token?.trim() && guestCtx?.refetchGuest) {
-        await guestCtx.refetchGuest();
-        // guestUser in this closure is stale; re-check storage + /auth/me via refetch side effect.
-        // Callers re-read guestCtx after await; also probe token success via a fresh /auth/me.
-        const me = await apiClient.get<{ success?: boolean; data?: { id?: number } }>("auth/me");
-        if (me?.data?.data?.id) return true;
+      if (token?.trim()) {
+        await guestCtx?.refetchGuest?.();
+        const hydrated = await readUsernameFromMe();
+        if (hydrated.ok) return hydrated;
       }
     } catch {
       /* fall through to wallet sign-in */
     }
 
-    if (!walletConnected || !walletAddress) return false;
-    if (!guestCtx?.loginByWallet || !signMessageAsync) return false;
-    if (launchLoginRef.current) return false;
+    if (!walletConnected || !walletAddress) return { ok: false, username: null };
+    if (!guestCtx?.loginByWallet || !signMessageAsync) return { ok: false, username: null };
+    if (launchLoginRef.current) return { ok: false, username: null };
     launchLoginRef.current = true;
     try {
       const message = `Sign in to Tycoon at ${Date.now()}`;
@@ -222,11 +239,11 @@ export default function ArenaPage() {
       const res = await guestCtx.loginByWallet({ address: walletAddress, chain, message, signature });
       if (res?.success) {
         await guestCtx.refetchGuest?.();
-        return true;
+        return await readUsernameFromMe();
       }
-      return false;
+      return { ok: false, username: null };
     } catch {
-      return false;
+      return { ok: false, username: null };
     } finally {
       launchLoginRef.current = false;
     }
@@ -649,7 +666,7 @@ export default function ArenaPage() {
     }
   }, [guestUser, walletAddress, walletParams?.address]);
 
-  const startArenaGame = async (opponentIds?: number[]) => {
+  const startArenaGame = async (opponentIds?: number[], usernameOverride?: string | null) => {
     const opponents = opponentIds ?? selectedOpponents;
     if (!isAuthed || !challengerAgentId || opponents.length === 0) return;
     setError(null);
@@ -664,7 +681,8 @@ export default function ArenaPage() {
       setArenaTxBusy(null);
 
       // You pay CELO for createGame; server only joins opponent agents (saves controller gas).
-      const username = (guestUser?.username || "").trim();
+      // Prefer override from ensureBackendSessionForLaunch — guestUser may still be stale after hydrate.
+      const username = (usernameOverride || guestUser?.username || "").trim();
       if (!username) {
         throw new Error("Sign in / register a username on Home before starting Agent Arena");
       }
@@ -719,7 +737,7 @@ export default function ArenaPage() {
     }
   };
 
-  const startHumanVsAgentGame = async (opponentId?: number) => {
+  const startHumanVsAgentGame = async (opponentId?: number, usernameOverride?: string | null) => {
     const oppId = opponentId ?? humanVsOpponentId;
     if (!isAuthed || !oppId) return;
     setError(null);
@@ -733,7 +751,7 @@ export default function ArenaPage() {
       setArenaTxBusy(null);
 
       // You pay CELO for createGame; server only joins the opponent agent (no controller create).
-      const username = (guestUser?.username || "").trim();
+      const username = (usernameOverride || guestUser?.username || "").trim();
       if (!username) {
         throw new Error("Sign in / register a username on Home before starting You vs Agent");
       }
@@ -807,25 +825,28 @@ export default function ArenaPage() {
       setError("Staked matches are 1-vs-1. Pick exactly one opponent or set stake to Free.");
       return;
     }
-    // If backend session is missing, hydrate JWT or prompt signature on launch (not on page load).
-    if (!guestUser) {
-      const ok = await ensureBackendSessionForLaunch();
-      if (!ok) {
-        const inMiniPay = isMiniPayEmbeddedWallet();
-        setError(
-          !walletConnected
-            ? "Connect your wallet, then try again."
-            : inMiniPay
-              ? "Couldn't sign you in. Go Home, finish Connect / Register, then return to Arena."
-              : "Couldn't sign you in. Approve the wallet signature, or register on Home first."
-        );
-        return;
-      }
+    // Always resolve session + username before start. guestUser React state can still be null
+    // right after a successful hydrate — that used to fail the first click with "Sign in / register…".
+    const session = await ensureBackendSessionForLaunch();
+    if (!session.ok) {
+      const inMiniPay = isMiniPayEmbeddedWallet();
+      setError(
+        !walletConnected
+          ? "Connect your wallet, then try again."
+          : inMiniPay
+            ? "Couldn't sign you in. Go Home, finish Connect / Register, then return to Arena."
+            : "Couldn't sign you in. Approve the wallet signature, or register on Home first."
+      );
+      return;
+    }
+    if (!session.username) {
+      setError("Sign in / register a username on Home before starting Arena.");
+      return;
     }
     if (matchType === "agentVsAi") {
-      void startHumanVsAgentGame(selectedOpponents[0]);
+      void startHumanVsAgentGame(selectedOpponents[0], session.username);
     } else {
-      void startArenaGame();
+      void startArenaGame(undefined, session.username);
     }
   };
 
