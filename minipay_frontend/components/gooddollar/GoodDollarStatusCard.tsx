@@ -165,7 +165,7 @@ export default function GoodDollarStatusCard({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-white">Not verified with GoodDollar</p>
           <p className="text-xs text-slate-400 truncate">
-            Verify to play on MiniPay and unlock the daily G$ TYC bonus
+            Verify to play and unlock the daily G$ TYC bonus
           </p>
         </div>
         <button

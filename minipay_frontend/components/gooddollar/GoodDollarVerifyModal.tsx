@@ -9,7 +9,7 @@ import {
 import { useGoodDollarVerify } from "@/hooks/useGoodDollarVerify";
 
 const DEFAULT_MESSAGE =
-  "Verify your humanity with GoodDollar to play on MiniPay. It's a quick one-time check and uses your connected wallet.";
+  "Verify your humanity with GoodDollar to play. It's a quick one-time check and uses your connected wallet.";
 
 export default function GoodDollarVerifyModal() {
   const [open, setOpen] = useState(false);

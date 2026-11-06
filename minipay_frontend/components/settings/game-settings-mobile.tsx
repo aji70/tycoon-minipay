@@ -402,7 +402,7 @@ export default function CreateGameMobile({
             toast.dismiss(toastId);
             promptGoodDollarVerify({
               verifyUrl: gd?.verifyUrl || "https://goodid.gooddollar.org/",
-              message: gd?.message || "Verify your humanity with GoodDollar to play on MiniPay.",
+              message: gd?.message || "Verify your humanity with GoodDollar to play.",
             });
             setIsStarting(false);
             return;

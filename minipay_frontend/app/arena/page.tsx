@@ -637,7 +637,7 @@ export default function ArenaPage() {
       if (!canCreateWithoutGoodDollar(gd)) {
         promptGoodDollarVerify({
           verifyUrl: gd?.verifyUrl || "https://goodid.gooddollar.org/",
-          message: gd?.message || "Verify your humanity with GoodDollar to play on MiniPay.",
+          message: gd?.message || "Verify your humanity with GoodDollar to play.",
         });
         return false;
       }
