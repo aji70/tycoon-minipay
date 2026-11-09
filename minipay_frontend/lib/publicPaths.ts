@@ -2,6 +2,7 @@ export const PUBLIC_PATHS = [
   "/",
   "/join-room-3d",
   "/leaderboard",
+  "/stats",
   "/terms",
   "/privacy",
   "/cookies",
