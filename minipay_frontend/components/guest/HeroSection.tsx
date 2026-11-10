@@ -15,10 +15,6 @@ const ScanlineOverlay = dynamic(
   () => import("@/components/hero/ScanlineOverlay").then((m) => ({ default: m.ScanlineOverlay })),
   { ssr: false }
 );
-const WorldStatsBar = dynamic(
-  () => import("@/components/hero/WorldStatsBar").then((m) => ({ default: m.WorldStatsBar })),
-  { ssr: false }
-);
 const HeroWalletPanel = dynamic(() => import("@/components/guest/HeroWalletPanel"), {
   ssr: false,
 });
@@ -153,10 +149,7 @@ const HeroSection: React.FC = () => {
 
       </main>
 
-      <div className="hero-overlay-fade-in">
-        <WorldStatsBar playersOnline={1234} propertiesOwned={5678} tokensInPlay="12.5M" />
-      </div>
-
+      {/* Decorative fake stats removed — live presence is Who’s online in the nav */}
       <HeroNoticeBanner />
     </section>
   );
