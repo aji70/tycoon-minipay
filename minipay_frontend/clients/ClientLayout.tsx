@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import NavBarMobile from "@/components/shared/navbar-mobile";
 import LobbyPresenceBeacon from "@/components/shared/LobbyPresenceBeacon";
 import ChallengeInviteBanner from "@/components/shared/ChallengeInviteBanner";
+import GoodDollarFvReturnBeacon from "@/components/gooddollar/GoodDollarFvReturnBeacon";
 import { ProfileProvider } from "@/context/ProfileContext";
 import { MessageNotificationsProvider } from "@/context/MessageNotificationsContext";
 import { ReactNode } from "react";
@@ -48,6 +49,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         <div suppressHydrationWarning>
           {/* Always register presence (even when nav is hidden on create/waiting). */}
           <LobbyPresenceBeacon />
+          <GoodDollarFvReturnBeacon />
           <ChallengeInviteBanner />
           {isBoard3D ? (
             <NavBarMobile minimal />

@@ -6,6 +6,7 @@ import { type Address, type PublicClient } from "viem";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { IdentitySDK } from "@goodsdks/citizen-sdk";
 import { GD_CELO_CHAIN_ID, GD_ENV } from "@/lib/gooddollar/constants";
+import { trackGoodDollarFv } from "@/lib/gooddollar/trackFv";
 
 const NOT_READY_MSG =
   "Connect your MiniPay wallet on Celo, then try Verify again.";
@@ -49,6 +50,11 @@ export function useGoodDollarVerify() {
 
     try {
       const callbackUrl = window.location.href;
+      await trackGoodDollarFv({
+        event: "fv_started",
+        address,
+        source: "minipay",
+      });
       const link = await identitySDK.generateFVLink(
         false,
         callbackUrl,
@@ -61,7 +67,7 @@ export function useGoodDollarVerify() {
       toast.error(FAILED_MSG);
       return false;
     }
-  }, [identitySDK]);
+  }, [identitySDK, address]);
 
   return {
     sdkReady: Boolean(identitySDK),

@@ -5,6 +5,7 @@ import { type Address, type PublicClient } from "viem";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { ClaimSDK, IdentitySDK } from "@goodsdks/citizen-sdk";
 import { GD_CELO_CHAIN_ID, GD_ENV } from "@/lib/gooddollar/constants";
+import { trackGoodDollarFv } from "@/lib/gooddollar/trackFv";
 
 /**
  * MiniPay port of web GoodDollar UBI claim (ClaimSDK + IdentitySDK).
@@ -42,13 +43,18 @@ export function useGoodDollarClaim() {
 
   const startVerification = useCallback(async () => {
     if (!sdks) throw new Error("Connect your MiniPay wallet on Celo first");
+    await trackGoodDollarFv({
+      event: "fv_started",
+      address,
+      source: "minipay_claim",
+    });
     const callbackUrl = typeof window !== "undefined" ? window.location.href : undefined;
     const link = await sdks.identitySDK.generateFVLink(false, callbackUrl, GD_CELO_CHAIN_ID);
     if (typeof window !== "undefined") {
       window.location.assign(link);
     }
     return link;
-  }, [sdks]);
+  }, [sdks, address]);
 
   const claim = useCallback(async () => {
     if (!sdks) throw new Error("Connect your MiniPay wallet on Celo first");
