@@ -29,6 +29,7 @@ import TycoonABI from '@/context/abi/tycoonabi.json';
 import { getLevelFromActivity } from '@/lib/level';
 import { DailyClaim } from '@/components/rewards/DailyClaim';
 import GoodDollarStatusCard from '@/components/gooddollar/GoodDollarStatusCard';
+import { GoodDollarClaim } from '@/components/gooddollar/GoodDollarClaim';
 import { SkeletonPerkGrid, SkeletonCard } from '@/components/ui/SkeletonCard';
 import EmptyState from '@/components/ui/EmptyState';
 import FirstTimeHint from '@/components/ui/FirstTimeHint';
@@ -917,6 +918,7 @@ function GuestProfileViewMobile({
 
         <div className="px-4 py-4 space-y-4">
           <GoodDollarStatusCard chain="CELO" playAddress={getGuestUserPlayAddress(guestUser)} />
+          <GoodDollarClaim />
           <DailyClaim chain="CELO" playAddress={getGuestUserPlayAddress(guestUser)} />
           <ProfileReferralCard />
         </div>
@@ -1798,6 +1800,7 @@ export default function ProfilePageMobile() {
             chain="CELO"
             playAddress={getGuestUserPlayAddress(guestUser) ?? walletAddress ?? undefined}
           />
+          <GoodDollarClaim />
           <DailyClaim
             chain="CELO"
             playAddress={getGuestUserPlayAddress(guestUser) ?? walletAddress ?? undefined}
