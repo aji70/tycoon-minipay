@@ -1209,6 +1209,11 @@ export default function GameShopMobile() {
                     <p className="text-[#00F0FF] font-semibold text-sm mt-2">
                       {Number(b.price_usdc).toFixed(2)} {activeStableLabel}
                     </p>
+                    {Number(b.price_usdc) > 0 && (
+                      <p className="text-emerald-300/90 font-semibold text-sm mt-0.5">
+                        {formatGoodDollarWhole(usdToGoodDollarWei(Number(b.price_usdc)))} {GOODDOLLAR_SYMBOL}
+                      </p>
+                    )}
                     <button
                       onClick={() =>
                         hasPaymentMethod ? handleBuyBundleWithUsdc(b.name) : connectWallet()
@@ -1315,6 +1320,11 @@ export default function GameShopMobile() {
                         <p className="text-base font-bold text-[#00F0FF] font-[family-name:var(--font-orbitron-sans)]">
                           {displayUsdt.toFixed(2)} {activeStableLabel}
                         </p>
+                        {!usdtNotReady && displayUsdt > 0 && (
+                          <p className="text-sm font-semibold text-emerald-300/90 mt-0.5 font-[family-name:var(--font-orbitron-sans)]">
+                            {formatGoodDollarWhole(usdToGoodDollarWei(displayUsdt))} {GOODDOLLAR_SYMBOL}
+                          </p>
+                        )}
                         {usdtNotReady && (
                           <p className="text-[9px] text-amber-400/90 mt-0.5 leading-tight">USDT price pending sync</p>
                         )}
